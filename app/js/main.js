@@ -157,6 +157,8 @@ var micLevel;
 let new_height;
 let new_width;
 
+let rect_color_offset;
+
 windowResized = () => {
     resizeCanvas(windowWidth, windowHeight);
 }
@@ -243,9 +245,9 @@ onBeat = (micLevel) => {
 }
 
 addRect = (micLevel) => {
-    let cv = (visualizer.center_vertical * 10)
-    let ch = (visualizer.center_horizontal * 10)
-    let rect_color_offset = map(micLevel, 0, 0.25, 50, 255)
+    let cv = (visualizer.center_vertical)
+    let ch = (visualizer.center_horizontal)
+    rect_color_offset = map(micLevel, 0, 0.25, 50, 255)
     var rect_obj = new RectObj(
         new_width, new_height,
         center_vertical=cv, center_horizontal=ch,
@@ -296,7 +298,6 @@ draw = () => {
         micLevel = mic.getLevel();
         level = amplitude.getLevel();
         detectBeat(level, micLevel);
-
     } else {     
         fill(255);   
         text('tap to start', width/2, height /2);
@@ -377,9 +378,8 @@ draw = () => {
     let energy = fft.getEnergy('bass', "treble")
     noStroke();
     fill(energy);
-    // bottom
-    for (let i = 0; i< spectrum.length; i++){
 
+    for (let i = 0; i< spectrum.length; i++){
         // bottom
         let x = map(i, 0, spectrum.length, 0, width*2);
         let neg_x = map(i, 0, spectrum.length, width*2, 0);
@@ -400,15 +400,32 @@ draw = () => {
         // let hh = -width/1.5 + map(spectrum[i], 0, 255, width, 0);
         // rect(0, hy, width / spectrum.length, hh )
         // rect(hneg_x, height*1.5, width / spectrum.length, hh )
-
     }
-
-    // top
 
     let adjusted_height = (new_height/2) + (visualizer.center_vertical * 10)
     let adjusted_width = (new_width/2) + (visualizer.center_horizontal * 10)
 
-    let color_offset = map(micLevel, 0, 0.25, 50, 255)
+    // let color_offset = map(micLevel, 0, 0.25, 50, 255)
+
+    // "hallway" lines
+    fill(0, 0, 0, 0)
+    stroke(200, 0, rect_color_offset, 90)
+    strokeWeight(3)
+
+    beginShape()
+    vertex(1 + 1, 1 + 1)
+    vertex(adjusted_width + 1, adjusted_height + 1)
+    vertex(adjusted_width + 1, adjusted_height - 1)
+    vertex(1 + 1, new_height - 1)
+    endShape(CLOSE)
+
+    beginShape()
+    vertex(new_width - 1, new_height - 1)
+    vertex(adjusted_width - 1, adjusted_height - 1)
+    vertex(adjusted_width - 1, adjusted_height + 1)
+    vertex(new_width - 1, 1 + 1)
+    endShape(CLOSE)
+
     // console.log(color_offset)
     // ===============================
     visualizer.rect_list.forEach((r, index) => {
@@ -436,10 +453,17 @@ draw = () => {
         stroke(color_offset, 0, r.cfill)
         strokeWeight(map(r.counter, 0, 150, 0, 10))
         beginShape()
-        vertex(nw + r.counter * 2, nh + (r.counter * 1.5))
-        vertex(nw + r.counter * 2, nh - (r.counter * 1.5))
-        vertex(nw - r.counter * 2, nh - (r.counter * 1.5))
-        vertex(nw - r.counter * 2, nh + (r.counter * 1.5))
+        // 16:9 (monitor)
+        vertex(nw + r.counter * 2, nh + (r.counter * 1.125))
+        vertex(nw + r.counter * 2, nh - (r.counter * 1.125))
+        vertex(nw - r.counter * 2, nh - (r.counter * 1.125))
+        vertex(nw - r.counter * 2, nh + (r.counter * 1.125))
+
+        // // 16:10 (laptop)
+        // vertex(nw + r.counter * 2, nh + (r.counter * 1.25))
+        // vertex(nw + r.counter * 2, nh - (r.counter * 1.25))
+        // vertex(nw - r.counter * 2, nh - (r.counter * 1.25))
+        // vertex(nw - r.counter * 2, nh + (r.counter * 1.25))
         endShape(CLOSE)
     })  
 }
