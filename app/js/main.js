@@ -87,7 +87,7 @@ class Visualizer {
         this.counter = 0
         this.speed = 1
         this.frequency = 3
-        this.center_vertical = 0
+        this.center_vertical = 30
         this.center_horizontal = 0
         this.purge = 0
         this.lines = 0
@@ -161,6 +161,13 @@ let aspect_ratio;
 
 let rect_color_offset;
 
+// variables for rainbow cycle
+let state = 0;
+let a = 255;
+let r = 255;
+let g = 0;
+let b = 0;
+
 windowResized = () => {
     // aspect_ratio = width / height
     // boils down to something like 1.33 : 1, or 1.33 width units for every 1 height unit
@@ -175,6 +182,47 @@ window.onresize = windowResized
 purge = () => {
     visualizer.counter = 1
     visualizer.rect_list = []
+}
+
+rainbowCycle = () => {
+    if(state == 0){
+        g++;
+        if(g == 255) {
+            state = 1;
+        } 
+    }
+    if(state == 1){
+        r--;
+        if(r == 0) {
+            state = 2;
+        }
+    }
+    if(state == 2){
+        b++;
+        if(b == 255) {
+            state = 3;
+        }
+    }
+    if(state == 3){
+        g--;
+        if(g == 0) {
+            state = 4;
+        }
+    }
+    if(state == 4){
+        r++;
+        if(r == 255) {
+            state = 5;
+        }
+    }
+    if(state == 5){
+        b--;
+        if(b == 0) {
+            state = 0;
+        }
+    }
+
+    // return r, g, b
 }
 
 setVideoSource = () => {
@@ -225,13 +273,11 @@ startLoop = () => {
     loop();
 }
 
+// for 3d / webgl camera capture
 // preload = () => {
-    
   // load the shader
 //   camShader = loadShader('../../shaders/sinewave_distortion/effect.vert', '../shaders/sinewave_distortion/effect.frag');
 // }
-
-
 
 detectBeat = (level, micLevel) => {
     if (level  > beatCutoff && level > beatThreshold){
@@ -269,8 +315,7 @@ addRect = (micLevel) => {
 setup = () => {
     windowResized()
     noLoop()
-    // let cnv = createCanvas(1440, 900, WEBGL);
-    // let cnv = createCanvas(1440, 900);
+    // let cnv = createCanvas(windowWidth, windowHeight, WEBGL);
     let cnv = createCanvas(windowWidth, windowHeight);
     cnv.mousePressed(userStartAudio);
 
@@ -312,9 +357,16 @@ draw = () => {
         fill(255);   
         text('tap to start', width/2, height /2);
     }
-    // let micLevel = mic.getLevel();
-    // console.log(micLevel)
 
+    // translate for WEBGL
+    // translate(-width, -height)
+
+    // translate for non-WEBGL
+    translate(-width/2, -height/2)
+
+    // =========================================
+
+    // 3d / webgl camera capture draw
     // push();
     // if (capture && capture.width) {
     //     // for 3D/WEBGL
@@ -348,6 +400,7 @@ draw = () => {
     // }
     // pop();
 
+    // 2d camera capture draw
     // push();
     // if (capture && capture.width) {
     //     image(capture, (width/2) - 310, (height/2) - 240, 640, 480)
@@ -355,39 +408,27 @@ draw = () => {
     // }
     // pop();
 
+    // =================================
+
     visualizer.counter += 1
-
-    // translate for WEBGL
-    // translate(-width, -height)
-
-    // translate for non-WEBGL
-    translate(-width/2, -height/2)
-
 
     if (visualizer.counter >= counter_max) {
         visualizer.counter = 1;
     }
 
-    // if (visualizer.counter % 10 == 0) {
-    //     let cv = (visualizer.center_vertical * 10)
-    //     let ch = (visualizer.center_horizontal * 10)
-    //     let rect_color_offset = map(micLevel, 0, 0.25, 50, 255)
-    //     var rect_obj = new RectObj(
-    //         new_width, new_height,
-    //         center_vertical=cv, center_horizontal=ch,
-    //         cfill=rect_color_offset)
-    //         // cfill=visualizer.color_adjust)
-    //     visualizer.rect_list.push(rect_obj)
-    //     visualizer.beat_counter += 1
-    // }
-    // else {
-    //     console.log('whats the counter then', visualizer.counter)
-    // }
-
     let spectrum = fft.analyze();
-    let energy = fft.getEnergy('bass', "treble")
+    // let energy = fft.getEnergy('bass', "treble")
+
     noStroke();
-    fill(energy);
+    // fill(energy);
+
+    // kind of greeny?
+    // fill(100, rect_color_offset, 50);
+
+    // rainbow cylce
+    // r,g,b are defined globally so don't need to return from func
+    rainbowCycle()
+    fill(r, g, b)
 
     for (let i = 0; i< spectrum.length; i++){
         // bottom
@@ -395,7 +436,7 @@ draw = () => {
         let neg_x = map(i, 0, spectrum.length, width*2, 0);
         let h = -height/1.5 + map(spectrum[i], 0, 255, height, 0);
         let neg_h = height/1.5 + map(spectrum[i], 0, 255, 0, height);
-        // stroke('brown')
+
         rect(x, height*1.5, width / spectrum.length, h )
         rect(neg_x, height*1.5, width / spectrum.length, h )
 
@@ -412,31 +453,42 @@ draw = () => {
         // rect(hneg_x, height*1.5, width / spectrum.length, hh )
     }
 
-    let adjusted_height = (new_height/2) + (visualizer.center_vertical * 10)
-    let adjusted_width = (new_width/2) + (visualizer.center_horizontal * 10)
+    let adjusted_height = (new_height/2) + (visualizer.center_vertical)
+    let adjusted_width = (new_width/2) + (visualizer.center_horizontal)
 
-    // let color_offset = map(micLevel, 0, 0.25, 50, 255)
+    // don't show lines until audio/loop is started
+    if (audioStarted) {
+        // "hallway" lines
+        fill(0, 0, 0, 0)
+        stroke(200, 0, rect_color_offset, 90)
+        strokeWeight(3)
 
-    // "hallway" lines
-    fill(0, 0, 0, 0)
-    stroke(200, 0, rect_color_offset, 90)
-    strokeWeight(3)
+        beginShape()
+        vertex(1, 1)
+        vertex(adjusted_width - 5 , adjusted_height - 5)
+        vertex(adjusted_width - 5, adjusted_height + 5)
+        vertex(1, new_height)
+        endShape(CLOSE)
 
-    beginShape()
-    vertex(1 + 1, 1 + 1)
-    vertex(adjusted_width + 1, adjusted_height + 1)
-    vertex(adjusted_width + 1, adjusted_height - 1)
-    vertex(1 + 1, new_height - 1)
-    endShape(CLOSE)
+        beginShape()
+        vertex(new_width, new_height)
+        vertex(adjusted_width + 5, adjusted_height + 5)
+        vertex(adjusted_width + 5, adjusted_height - 5)
+        vertex(new_width, 1)
+        endShape(CLOSE)
 
-    beginShape()
-    vertex(new_width - 1, new_height - 1)
-    vertex(adjusted_width - 1, adjusted_height - 1)
-    vertex(adjusted_width - 1, adjusted_height + 1)
-    vertex(new_width - 1, 1 + 1)
-    endShape(CLOSE)
-
-    // console.log(color_offset)
+        stroke(200, 0, rect_color_offset, 90)
+        beginShape()
+        vertex(adjusted_width - 5 , adjusted_height - 5)
+        vertex(adjusted_width + 5, adjusted_height - 5)
+        endShape(CLOSE)
+        beginShape()
+        vertex(adjusted_width + 5, adjusted_height + 5)
+        
+        vertex(adjusted_width - 5, adjusted_height + 5)
+        endShape(CLOSE)
+    }
+    
     // ===============================
     visualizer.rect_list.forEach((r, index) => {
         if (((new_width / 1) - r.counter) < 1 ) {
@@ -447,9 +499,6 @@ draw = () => {
         r.counter += sub_value + (0.05 * r.counter)
         var nw = (new_width / 2) + r.center_horizontal
         var nh = (new_height / 2) + r.center_vertical
-        if (index ==1) {
-            // console.log(r.counter)
-        }
         var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
         // var color_offset = map(micLevel * 4, 0, (new_width - 100), 100, 255)
 
@@ -462,25 +511,13 @@ draw = () => {
         // stroke(color_offset, 0, visualizer.color_adjust)
         stroke(color_offset, 0, r.cfill)
         strokeWeight(map(r.counter, 0, 150, 0, 10))
+
         beginShape()
-        // 16:9 (monitor)
-        // vertex(nw + r.counter * 2, nh + (r.counter * 1.125))
-        // vertex(nw + r.counter * 2, nh - (r.counter * 1.125))
-        // vertex(nw - r.counter * 2, nh - (r.counter * 1.125))
-        // vertex(nw - r.counter * 2, nh + (r.counter * 1.125))
-
-        // 16:10 (laptop)
-        // vertex(nw + r.counter * 2, nh + (r.counter * 1.25))
-        // vertex(nw + r.counter * 2, nh - (r.counter * 1.25))
-        // vertex(nw - r.counter * 2, nh - (r.counter * 1.25))
-        // vertex(nw - r.counter * 2, nh + (r.counter * 1.25))
-
-        // with aspect ratio calculation
+        // draw rect with aspect ratio calculation
         vertex(nw + r.counter * aspect_ratio, nh + (r.counter * 1))
         vertex(nw + r.counter * aspect_ratio, nh - (r.counter * 1))
         vertex(nw - r.counter * aspect_ratio, nh - (r.counter * 1))
         vertex(nw - r.counter * aspect_ratio, nh + (r.counter * 1))
-
         endShape(CLOSE)
     })  
 }
