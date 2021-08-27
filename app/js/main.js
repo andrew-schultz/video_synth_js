@@ -157,11 +157,20 @@ var micLevel;
 let new_height;
 let new_width;
 
+let aspect_ratio;
+
 let rect_color_offset;
 
 windowResized = () => {
+    // aspect_ratio = width / height
+    // boils down to something like 1.33 : 1, or 1.33 width units for every 1 height unit
+
+    aspect_ratio = windowWidth / windowHeight;
+    // we might want to round this to like 2 or 3 decimals
     resizeCanvas(windowWidth, windowHeight);
 }
+
+window.onresize = windowResized
 
 purge = () => {
     visualizer.counter = 1
@@ -258,6 +267,7 @@ addRect = (micLevel) => {
 }
 
 setup = () => {
+    windowResized()
     noLoop()
     // let cnv = createCanvas(1440, 900, WEBGL);
     // let cnv = createCanvas(1440, 900);
@@ -454,16 +464,23 @@ draw = () => {
         strokeWeight(map(r.counter, 0, 150, 0, 10))
         beginShape()
         // 16:9 (monitor)
-        vertex(nw + r.counter * 2, nh + (r.counter * 1.125))
-        vertex(nw + r.counter * 2, nh - (r.counter * 1.125))
-        vertex(nw - r.counter * 2, nh - (r.counter * 1.125))
-        vertex(nw - r.counter * 2, nh + (r.counter * 1.125))
+        // vertex(nw + r.counter * 2, nh + (r.counter * 1.125))
+        // vertex(nw + r.counter * 2, nh - (r.counter * 1.125))
+        // vertex(nw - r.counter * 2, nh - (r.counter * 1.125))
+        // vertex(nw - r.counter * 2, nh + (r.counter * 1.125))
 
-        // // 16:10 (laptop)
+        // 16:10 (laptop)
         // vertex(nw + r.counter * 2, nh + (r.counter * 1.25))
         // vertex(nw + r.counter * 2, nh - (r.counter * 1.25))
         // vertex(nw - r.counter * 2, nh - (r.counter * 1.25))
         // vertex(nw - r.counter * 2, nh + (r.counter * 1.25))
+
+        // with aspect ratio calculation
+        vertex(nw + r.counter * aspect_ratio, nh + (r.counter * 1))
+        vertex(nw + r.counter * aspect_ratio, nh - (r.counter * 1))
+        vertex(nw - r.counter * aspect_ratio, nh - (r.counter * 1))
+        vertex(nw - r.counter * aspect_ratio, nh + (r.counter * 1))
+
         endShape(CLOSE)
     })  
 }
