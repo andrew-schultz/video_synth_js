@@ -98,18 +98,32 @@ class Visualizer {
         this.segment_counter = 0
         this.global_bool = {'odd': true, 'even': true}
         this.color_adjust = 0
+        this.sphere_list = []
     }
 }
 
 class RectObj {
-    constructor(width, height, center_vertical=0, center_horizontal=0, cfill=0) {
+    constructor(width, height, center_vertical=0, center_horizontal=0, cfill=0, first=false) {
         this.counter = 0
         this.width = width
         this.height = height
         this.center_vertical = center_vertical
         this.center_horizontal = center_horizontal
         this.cfill = cfill
+        this.first = false
     }
+}
+
+class SphereObj {
+    constructor(radius, detailX, detailY, cfill=0, cstroke=0) {
+        this.counter = 0
+        this.radius = radius
+        this.detailX = detailX
+        this.detailY = detailY
+        this.cfill = cfill
+        this.cstroke = cstroke
+    }
+    
 }
 
 const visualizer = new Visualizer();
@@ -167,6 +181,7 @@ let a = 255;
 let r = 255;
 let g = 0;
 let b = 0;
+let rainbowCyclesLeft = 0;
 
 windowResized = () => {
     // aspect_ratio = width / height
@@ -225,6 +240,35 @@ rainbowCycle = () => {
     // return r, g, b
 }
 
+setRainbowCylce = (times) => {
+    var newTime = times - 1
+    if (newTime > 0) {
+        rainbowCycle()
+        return newTime 
+    }
+    else {
+        return 0
+    }
+}
+
+rainbowCycleOn = (times) => {
+    rainbowCyclesLeft = setRainbowCylce(times)
+    if (rainbowCyclesLeft > 0) {
+        setInterval(rainbowCycleOn(rainbowCyclesLeft), 100)
+    }
+}
+
+setGradient = (c1, c2) => {
+    // noprotect
+    noFill();
+    for (var y = 0; y < height; y++) {
+      var inter = map(y, 0, height, 0, 1);
+      var c = lerpColor(c1, c2, inter);
+      stroke(c);
+      line(0, y, width, y);
+    }
+}
+
 setVideoSource = () => {
     var videoSelect = document.getElementById('videoSourceSelect');
     videoDeviceId = videoSelect.value
@@ -280,12 +324,13 @@ startLoop = () => {
 // }
 
 detectBeat = (level, micLevel) => {
-    if (level  > beatCutoff && level > beatThreshold){
+    if (level  > beatCutoff && level > beatThreshold) {
+        rainbowCycleOn(50);
         onBeat(micLevel);
         beatCutoff = level *1.2;
         framesSinceLastBeat = 0;
     } else{
-        if (framesSinceLastBeat <= beatHoldFrames){
+        if (framesSinceLastBeat <= beatHoldFrames) {
             framesSinceLastBeat ++;
         }
         else{
@@ -296,7 +341,21 @@ detectBeat = (level, micLevel) => {
 }
   
 onBeat = (micLevel) => {
+    console.log('add that beat')
     addRect(micLevel)
+    addSphere(micLevel)
+}
+
+addSphere = (micLevel) => {
+    let cv = (visualizer.center_vertical)
+    let ch = (visualizer.center_horizontal)
+    sphere_color_offset = map(micLevel, 0, 0.25, 50, 255)
+    var sphereObj = new SphereObj(
+        1,
+        16,
+        16,
+    )
+    visualizer.sphere_list.push(sphereObj)
 }
 
 addRect = (micLevel) => {
@@ -315,8 +374,8 @@ addRect = (micLevel) => {
 setup = () => {
     windowResized()
     noLoop()
-    // let cnv = createCanvas(windowWidth, windowHeight, WEBGL);
-    let cnv = createCanvas(windowWidth, windowHeight);
+    let cnv = createCanvas(windowWidth, windowHeight, WEBGL);
+    // let cnv = createCanvas(windowWidth, windowHeight);
     cnv.mousePressed(userStartAudio);
 
     mic = new p5.AudioIn();
@@ -359,10 +418,10 @@ draw = () => {
     }
 
     // translate for WEBGL
-    // translate(-width, -height)
+    translate(-width, -height)
 
     // translate for non-WEBGL
-    translate(-width/2, -height/2)
+    // translate(-width/2, -height/2)
 
     // =========================================
 
@@ -427,76 +486,170 @@ draw = () => {
 
     // rainbow cylce
     // r,g,b are defined globally so don't need to return from func
+
+    // ok we only trigger an increment (`x`) of `raindbowCylce()` n times where n == increment (`x`)
+    // trigger is on the beat
+    // trigger when beat detection ?\\\\\\\\\\\\\
     rainbowCycle()
     fill(r, g, b)
 
-    for (let i = 0; i< spectrum.length; i++){
-        // bottom
-        let x = map(i, 0, spectrum.length, 0, width*2);
-        let neg_x = map(i, 0, spectrum.length, width*2, 0);
-        let h = -height/1.5 + map(spectrum[i], 0, 255, height, 0);
-        let neg_h = height/1.5 + map(spectrum[i], 0, 255, 0, height);
+    // for (let i = 0; i< spectrum.length; i++){
+    //     // bottom
+    //     let x = map(i, 0, spectrum.length, 0, width*2);
+    //     let neg_x = map(i, 0, spectrum.length, width*2, 0);
+    //     let h = -height/1.5 + map(spectrum[i], 0, 255, height, 0);
+    //     let neg_h = height/1.5 + map(spectrum[i], 0, 255, 0, height);
 
-        rect(x, height*1.5, width / spectrum.length, h )
-        rect(neg_x, height*1.5, width / spectrum.length, h )
+    //     rect(x, height*1.5, width / spectrum.length, h )
+    //     rect(neg_x, height*1.5, width / spectrum.length, h )
 
-        // top
-        rect(x, height * -0.50, width / spectrum.length, height - h )
-        rect(neg_x, height * -0.50, width / spectrum.length, height - h )
-        // rect(neg_x, height*1.5, width / spectrum.length, neg_h )
+    //     // top
+    //     rect(x, height * -0.50, width / spectrum.length, height - h )
+    //     rect(neg_x, height * -0.50, width / spectrum.length, height - h )
+    //     // rect(neg_x, height*1.5, width / spectrum.length, neg_h )
 
-        // left
-        // let hy = map(i, 0, spectrum.length, 0, height);
-        // let hneg_x = map(i, 0, spectrum.length, height*2, 0);
-        // let hh = -width/1.5 + map(spectrum[i], 0, 255, width, 0);
-        // rect(0, hy, width / spectrum.length, hh )
-        // rect(hneg_x, height*1.5, width / spectrum.length, hh )
-    }
+    //     // left
+    //     // let hy = map(i, 0, spectrum.length, 0, height);
+    //     // let hneg_x = map(i, 0, spectrum.length, height*2, 0);
+    //     // let hh = -width/1.5 + map(spectrum[i], 0, 255, width, 0);
+    //     // rect(0, hy, width / spectrum.length, hh )
+    //     // rect(hneg_x, height*1.5, width / spectrum.length, hh )
+    // }
 
     let adjusted_height = (new_height/2) + (visualizer.center_vertical)
-    let adjusted_width = (new_width/2) + (visualizer.center_horizontal)
+    let adjusted_width = ((new_width/2) + (visualizer.center_horizontal))
 
     // don't show lines until audio/loop is started
     if (audioStarted) {
+        center_square_size = 5
         // "hallway" lines
         fill(0, 0, 0, 0)
-        stroke(200, 0, rect_color_offset, 90)
+        // stroke(200, 0, rect_color_offset, 90)
+        stroke(r, g, b, 90)
         strokeWeight(3)
 
+        // var topLeft = adjusted_width - (5 * aspect_ratio);
+        // var bottomLeft = 
+        // var topRight
+        // var bottomRight;
+
+        
+        
+        fill(200, 0, rect_color_offset, 80)
+
+        // left
         beginShape()
         vertex(1, 1)
-        vertex(adjusted_width - 5 , adjusted_height - 5)
-        vertex(adjusted_width - 5, adjusted_height + 5)
+        vertex(adjusted_width - (aspect_ratio * center_square_size) , adjusted_height - center_square_size)
+        vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height + center_square_size)
         vertex(1, new_height)
         endShape(CLOSE)
 
+        // right
         beginShape()
         vertex(new_width, new_height)
-        vertex(adjusted_width + 5, adjusted_height + 5)
-        vertex(adjusted_width + 5, adjusted_height - 5)
+        vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+        vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height - center_square_size)
         vertex(new_width, 1)
+        endShape(CLOSE)
+
+        fill(200, 0, rect_color_offset, 65)
+        // top
+        beginShape()
+        vertex(1, 1)
+        vertex(adjusted_width - (aspect_ratio * center_square_size) , adjusted_height - center_square_size)
+        vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height - center_square_size)
+        vertex(new_width, 1)
+        endShape(CLOSE)
+
+        fill(r, g, b, 50)
+        // bottom
+        beginShape()
+        vertex(1, new_height)
+        vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+        vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+        vertex(new_width, new_height)
         endShape(CLOSE)
 
         stroke(200, 0, rect_color_offset, 90)
         beginShape()
-        vertex(adjusted_width - 5 , adjusted_height - 5)
-        vertex(adjusted_width + 5, adjusted_height - 5)
+        vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height - center_square_size)
+        vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height - center_square_size)
         endShape(CLOSE)
+
         beginShape()
-        vertex(adjusted_width + 5, adjusted_height + 5)
-        
-        vertex(adjusted_width - 5, adjusted_height + 5)
+        vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+        vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height + center_square_size)
         endShape(CLOSE)
+
+        // fill in the middle square
+        // console.log('adjusted_width - (aspect_ratio * center_square_size)', adjusted_width - (aspect_ratio * center_square_size))
+        // console.log('adjusted_height - center_square_size', adjusted_height - center_square_size)
+        // console.log('adjusted_height + center_square_size', adjusted_height + center_square_size)
+        // console.log('adjusted_width + (aspect_ratio * center_square_size)', adjusted_width + (aspect_ratio * center_square_size))
+        fill(r, g, b, 70)
+        beginShape()
+        vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height - center_square_size)
+        vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+        vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+        vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height - center_square_size)
+        endShape(CLOSE)
+
+        // light coming from the middle square
+
+        
+        // directionalLight(255, 255, 255, adjusted_width, adjusted_height+50);
+        
+        push()
+        stroke(r, g, b, 100)
+        // noStroke();
+        translate(adjusted_width, adjusted_height)
+        directionalLight(255, 255, 255, 0, 0, -1);
+        rotateY(millis() / 1000)
+        sphere(100, 16,16);
+
+
+        // rotateX(frameCount * 0.01);
+        // rotateY(frameCount * 0.01);
+        // box(100)
+        pop()
+
+        // light coming from the middle square
+        // directionalLight(250, 250, 250, -adjusted_width, -adjusted_height, -1);
     }
+
+    // list of speheres
+    // loop through list
+    //  draw each one
+    //  move and rotate
     
+    // visualizer.sphere_list.forEach((s, index) => {
+    //     if (((new_width / 1) - s.counter) < 1 ) {
+    //         visualizer.sphere_list.splice(index, 1)
+    //     }
+
+    //     var sub_value = map(s.counter, 0, new_width, 0.1, (1 * visualizer.speed))
+    //     s.counter += sub_value + (0.05 * s.counter)
+    //     s.radius = s.counter
+
+    //     push()
+    //     stroke(r, g, b, 100)
+    //     // noStroke();
+    //     translate(adjusted_width, adjusted_height)
+    //     // directionalLight(255, 255, 255, 0, 0, -1);
+    //     rotateY(millis() / 1000)
+    //     sphere(s.radius, 16,16);
+    //     pop()
+    // })
+
+
+
     // ===============================
     visualizer.rect_list.forEach((r, index) => {
         if (((new_width / 1) - r.counter) < 1 ) {
             visualizer.rect_list.splice(index, 1)
         }
 
-        var sub_value = map(r.counter, 0, new_width, 0.1, (10 * visualizer.speed))
-        r.counter += sub_value + (0.05 * r.counter)
         var nw = (new_width / 2) + r.center_horizontal
         var nh = (new_height / 2) + r.center_vertical
         var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
@@ -507,17 +660,50 @@ draw = () => {
         // fill(r.cfill, color_offset * 2, r.cfill, 255)
         // fill(visualizer.color_adjust, r.cfill, color_offset, 255)
         // fill(0, visualizer.color_adjust/2, visualizer.color_adjust, 255)
-        fill('rgba(0,0,0,0)')
+        
+
+        if (r.counter < 4) {
+            r.first = true;
+        }
+        else {
+            r.first = false;
+        }
+
+        var sub_value = map(r.counter, 0, new_width, 0.1, (10 * visualizer.speed))
+        r.counter += sub_value + (0.05 * r.counter)
+
+        if (r.first) {
+            fill(color_offset, 0, r.cfill)
+        }
+        else {
+            fill('rgba(0,0,0,0)')
+        }
+        
         // stroke(color_offset, 0, visualizer.color_adjust)
         stroke(color_offset, 0, r.cfill)
         strokeWeight(map(r.counter, 0, 150, 0, 10))
 
+        // console.log('(nw + r.counter * aspect_ratio) + 25',(nw + r.counter * aspect_ratio) + 25)
+        // console.log('(nh + (r.counter * 1)) + 25', (nh + (r.counter * 1)) + 25)
         beginShape()
         // draw rect with aspect ratio calculation
         vertex(nw + r.counter * aspect_ratio, nh + (r.counter * 1))
         vertex(nw + r.counter * aspect_ratio, nh - (r.counter * 1))
         vertex(nw - r.counter * aspect_ratio, nh - (r.counter * 1))
         vertex(nw - r.counter * aspect_ratio, nh + (r.counter * 1))
+        
+        // vertex((nw + r.counter * aspect_ratio) + 25, (nh + (r.counter * 1)) + 25)
+        // vertex((nw + r.counter * aspect_ratio) +25, (nh - (r.counter * 1)) - 25)
+        // vertex((nw - r.counter * aspect_ratio) -25, (nh - (r.counter * 1)) - 25)
+        // vertex((nw - r.counter * aspect_ratio) -25, (nh + (r.counter * 1)) + 25)
+        
+        // vertex((nw + r.counter * aspect_ratio) + 25, (nh + (r.counter * 1)) + 25)
+        // vertex((nw + r.counter * aspect_ratio) +25, (nh - (r.counter * 1)) - 25)
+        // vertex((nw - r.counter * aspect_ratio) -25, (nh - (r.counter * 1)) - 25)
+        // vertex((nw - r.counter * aspect_ratio) -25, (nh + (r.counter * 1)) + 25)
+        // debugger
         endShape(CLOSE)
-    })  
+    }) 
+
+    
 }
