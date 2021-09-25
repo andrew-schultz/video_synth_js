@@ -341,7 +341,7 @@ detectBeat = (level, micLevel) => {
 }
   
 onBeat = (micLevel) => {
-    console.log('add that beat')
+    // console.log('add that beat')
     addRect(micLevel)
     addSphere(micLevel)
 }
@@ -601,12 +601,24 @@ draw = () => {
         // directionalLight(255, 255, 255, adjusted_width, adjusted_height+50);
         
         push()
+        // welp how can we have this guy move in and out?
+        // translate on the z axis?
+        // set an x, y, z limit
+        // move in a direction until it hits one of those limits, then 'bounce' back in the other direction
+        
+        noStroke()
         stroke(r, g, b, 100)
-        // noStroke();
-        translate(adjusted_width, adjusted_height)
+        fill(255, 255, 255, 90)
+        translate(adjusted_width, adjusted_height, 10)
+        let t = millis() / 2000
+        // let v = p5.Vector.fromAngle(t, 50)
+        // let v = p5.Vector.fromAngles(t * 1.0, t * 1.3, 100)
+        // console.log(v)
+        // translate(v);
         directionalLight(255, 255, 255, 0, 0, -1);
-        rotateY(millis() / 1000)
-        sphere(100, 16,16);
+        rotateY(t)
+        // rotateX(t)
+        sphere(100, 16, 16);
 
 
         // rotateX(frameCount * 0.01);
