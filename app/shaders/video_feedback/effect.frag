@@ -1,35 +1,3 @@
-Skip to content
-Search or jump to…
-
-Pull requests
-Issues
-Marketplace
-Explore
- 
-@andrew-schultz 
-aferriss
-/
-p5jsShaderExamples
-14
-456
-68
-Code
-Issues
-1
-Pull requests
-Actions
-Projects
-Wiki
-Security
-Insights
-p5jsShaderExamples/4_image-effects/4-16_video-feedback/effect.frag
-@aferriss
-aferriss changed around feedback example a lil
-Latest commit 225c425 on May 19, 2018
- History
- 1 contributor
-79 lines (56 sloc)  2 KB
-  
 precision mediump float;
 
 #define PI 3.14159265359
@@ -109,16 +77,3 @@ void main() {
   // render the output
   gl_FragColor = tex;
 }
-© 2021 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Docs
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
-Loading complete

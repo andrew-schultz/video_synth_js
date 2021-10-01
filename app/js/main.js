@@ -138,7 +138,8 @@ let camShader;
 var mic;
 var vid;
 let fft;
-
+let shaderLayer;
+let copyLayer;
 
 var amplitude;
 
@@ -332,9 +333,10 @@ startLoop = () => {
 
 // for 3d / webgl camera capture
 preload = () => {
-//   load the shader
-    // camShader = loadShader('../../shaders/sinewave_distortion/effect.vert', '../shaders/sinewave_distortion/effect.frag');
-    camShader = loadShader('/shaders/rgb_to_hsb/effect.vert', '/shaders/rgb_to_hsb/effect.frag');
+    //   load the shader
+    // camShader = loadShader('/shaders/sinewave_distortion/effect.vert', '/shaders/sinewave_distortion/effect.frag');
+    camShader = loadShader('/shaders/video_feedback/effect.vert', '/shaders/video_feedback/effect.frag');
+    // camShader = loadShader('/shaders/rgb_to_hsb/effect.vert', '/shaders/rgb_to_hsb/effect.frag');
 }
 
 detectBeat = (level, micLevel) => {
@@ -392,6 +394,26 @@ setup = () => {
     // let cnv = createCanvas(windowWidth, windowHeight);
     cnv.mousePressed(userStartAudio);
 
+    // =================================
+    // // rainbow cycle / rgb_to_hsb shader
+    // --------------------------------- 
+    // // initialize the createGraphics layers
+    // shaderTexture = createGraphics(640, 480, WEBGL);
+
+    // // turn off the createGraphics layers stroke
+    // shaderTexture.noStroke();
+    // ========================
+
+    // =================================
+    // // video_feeback shader
+    // --------------------------------- 
+    // this layer will use webgl with our shader
+    shaderLayer = createGraphics(windowWidth, windowHeight, WEBGL);
+
+    // this layer will just be a copy of what we just did with the shader
+    copyLayer = createGraphics(windowWidth, windowHeight);
+    // ========================
+
     mic = new p5.AudioIn();
     mic.start()
     mic.getSources().then(devices => {
@@ -407,14 +429,9 @@ setup = () => {
         },
         audio: false
     };
-    // vid = createCapture(constraints, function(stream) {
-    //     console.log(stream);
-    //     debugger
-    // });
     vid = createCapture(VIDEO)
     vid.size(windowWidth, windowHeight);
     vid.hide()
-    // debugger
     textAlign(CENTER);
 
     fft = new p5.FFT();
@@ -453,44 +470,15 @@ draw = () => {
     // translate for non-WEBGL
     // translate(-width/2, -height/2)
 
-    // =========================================
-    // 3d / webgl camera capture draw
-    // push();
-
-    //     // lets just send the cam to our shader as a uniform
-    //     camShader.setUniform('tex0', capture);
-
-    //     // send a slow frameCount to the shader as a time variable
-    //     camShader.setUniform('time', frameCount * 0.01);
-    //     // debugger
-    //     // lets map the mouseX to frequency and mouseY to amplitude
-    //     // try playing with these to get a more or less distorted effect
-    //     // 10 and 0.25 are just magic numbers that I thought looked good
-    //     let freq = 10;
-    //     let amp = 0.25;
-    //     // let freq = map(mouseX, 0, width, 0, 10.0);
-    //     // let amp = map(mouseY, 0, height, 0, 0.25);
-
-    //     // send the two values to the shader
-    //     camShader.setUniform('frequency', freq);
-    //     camShader.setUniform('amplitude', amp);
-        
-    //     // for 2D
-    //     // image(capture, (width/2) - 310, (height/2) - 240, 640, 480)
-
-    //     // filter(THRESHOLD)
-    //     // filter(INVERT);
-    // }
-    // pop();
-
-    // 2d camera capture draw
+    // =================================
+    // // 2d camera capture draw
+    // ---------------------------------
     // push();
     // if (capture && capture.width) {
     //     image(capture, (width/2), (height/2), 640, 480)
     //     filter(THRESHOLD)
     // }
     // pop();
-
     // =================================
 
     visualizer.counter += 1
@@ -547,18 +535,10 @@ draw = () => {
     if (audioStarted) {
         center_square_size = 5
         // "hallway" lines
-        fill(0, 0, 0, 0)
+        // fill(0, 0, 0, 0)
         // stroke(200, 0, rect_color_offset, 90)
         stroke(r, g, b, 90)
         strokeWeight(3)
-
-        // var topLeft = adjusted_width - (5 * aspect_ratio);
-        // var bottomLeft = 
-        // var topRight
-        // var bottomRight;
-
-        
-        
         fill(200, 0, rect_color_offset, 80)
 
         // left
@@ -607,10 +587,6 @@ draw = () => {
         endShape(CLOSE)
 
         // fill in the middle square
-        // console.log('adjusted_width - (aspect_ratio * center_square_size)', adjusted_width - (aspect_ratio * center_square_size))
-        // console.log('adjusted_height - center_square_size', adjusted_height - center_square_size)
-        // console.log('adjusted_height + center_square_size', adjusted_height + center_square_size)
-        // console.log('adjusted_width + (aspect_ratio * center_square_size)', adjusted_width + (aspect_ratio * center_square_size))
         fill(r, g, b, 70)
         beginShape()
         vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height - center_square_size)
@@ -620,8 +596,6 @@ draw = () => {
         endShape(CLOSE)
 
         // light coming from the middle square
-
-        
         // directionalLight(255, 255, 255, adjusted_width, adjusted_height+50);
         
         push()
@@ -632,43 +606,80 @@ draw = () => {
         
         noStroke()
         // stroke(r, g, b, 100)
-        // stroke(r, g, b, 0)
+        strokeWeight(1.5)
+        stroke(`rgba(${r}, ${g}, ${b}, 1.5)`)
         // fill(255, 255, 255, 90)
         translate(adjusted_width, adjusted_height, 10)
-        let t = millis() / 2000
+        
+        // =====================
+        // set 'v' for 3d movement of sphere
+        // --------------------------------- 
         // let v = p5.Vector.fromAngle(t, 50)
         // let v = p5.Vector.fromAngles(t * 1.0, t * 1.3, 100)
         // console.log(v)
         // translate(v);
-        directionalLight(255, 255, 255, 0, 0, -1);
+        // ====================
+        let t = millis() / 3000
         rotateY(t)
-        // rotateX(t)
-        // if (vid) {
-        // if (camShader) {
-            // debugger
-            
-            // texture(camShader);
-        // }
+        // rotateX(t/2)
+
+        directionalLight(255, 255, 255, 0, 0, -1);
+        
         if (vid && vid.width && camShader) {
-            // debugger
             // for 3D/WEBGL
             // https://github.com/aferriss/p5jsShaderExamples
-            // shader() sets the active shader with our shader  
-            shader(camShader);
+
+            // =================================
+            // rainbow cycle / rgb_to_hsb shader
+            // --------------------------------- 
+            // // instead of just setting the active shader we are passing it to the createGraphics layer
+            // shaderTexture.shader(camShader);
+            // // here we're using setUniform() to send our uniform values to the shader
+            // camShader.setUniform('tex0', vid);
+            // camShader.setUniform('time', frameCount * 0.01);
+            // // passing the shaderTexture layer geometry to render on
+            // shaderTexture.rect(0,0,width,height);
+            // // pass the shader as a texture
+            // texture(shaderTexture);
+            // =================================
+
+            // =================================
+            // video_feedback shader
+            // --------------------------------- 
+            // shader() sets the active shader with our shader
+            shaderLayer.shader(camShader);
+
             // lets just send the cam to our shader as a uniform
             camShader.setUniform('tex0', vid);
-            // send a time variable to the shader
+
+            // also send the copy layer to the shader as a uniform
+            camShader.setUniform('tex1', copyLayer);
+
+            // send mouseDown to the shader as a int (either 0 or 1)
+            // everytime the counter is divisible by 100 lets reset the feedback
+            if (visualizer.counter % 100 == 0) {
+                camShader.setUniform('mouseDown', 1);
+            }
+            else {
+                // lets also allow clicking to reset the feedback
+                camShader.setUniform('mouseDown', int(mouseIsPressed));
+            }
+
             camShader.setUniform('time', frameCount * 0.01);
-            // debugger
-            texture(vid);
-            sphere(100, 16, 16);
+
+            // rect gives us some geometry on the screen
+            shaderLayer.rect(0, 0, width, height);
+
+            // draw the shaderlayer into the copy layer
+            copyLayer.image(shaderLayer, 0, 0, width, height);
+
+            // pass the shader as a texture
+            texture(shaderLayer)
+            // =================================
+
+            sphere(150, 16, 16);
         }
-        
 
-
-        // rotateX(frameCount * 0.01);
-        // rotateY(frameCount * 0.01);
-        // box(100)
         pop()
 
         // light coming from the middle square
