@@ -136,6 +136,7 @@ let audioStarted = false;
 // the shader variable
 let camShader;
 var mic;
+var vid;
 let fft;
 
 
@@ -272,6 +273,18 @@ setGradient = (c1, c2) => {
 setVideoSource = () => {
     var videoSelect = document.getElementById('videoSourceSelect');
     videoDeviceId = videoSelect.value
+
+    if (vid) {
+        // debugger
+        vid.getSources().then(devices => {
+            devices.forEach((device, i) => {
+                vid.setSource(i)
+                vid.start()
+                console.log(vid)
+                // debugger
+            })
+        })
+    }
 }
 
 setAudioSource = () => {
@@ -300,13 +313,13 @@ startLoop = () => {
     audioSelect.style.display = 'none';
     startButton.style.display = 'none';
 
-    let constraints = {
-        video: {
-            deviceId: videoDeviceId,
-            optional: [{ maxFrameRate: 10 }]
-        },
-        audio: false
-    }
+    // let constraints = {
+    //     video: {
+    //         deviceId: videoDeviceId,
+    //         optional: [{ maxFrameRate: 10 }]
+    //     },
+    //     audio: false
+    // }
 
     // capture = createCapture(constraints);
     // capture.size(width/2, height/2)
@@ -318,10 +331,11 @@ startLoop = () => {
 }
 
 // for 3d / webgl camera capture
-// preload = () => {
-  // load the shader
-//   camShader = loadShader('../../shaders/sinewave_distortion/effect.vert', '../shaders/sinewave_distortion/effect.frag');
-// }
+preload = () => {
+//   load the shader
+    // camShader = loadShader('../../shaders/sinewave_distortion/effect.vert', '../shaders/sinewave_distortion/effect.frag');
+    camShader = loadShader('/shaders/rgb_to_hsb/effect.vert', '/shaders/rgb_to_hsb/effect.frag');
+}
 
 detectBeat = (level, micLevel) => {
     if (level  > beatCutoff && level > beatThreshold) {
@@ -385,6 +399,22 @@ setup = () => {
         mic.start()
     })
     console.log('mic', mic)
+
+    let constraints = {
+        video: {
+            deviceId: videoDeviceId,
+            optional: [{ maxFrameRate: 10 }]
+        },
+        audio: false
+    };
+    // vid = createCapture(constraints, function(stream) {
+    //     console.log(stream);
+    //     debugger
+    // });
+    vid = createCapture(VIDEO)
+    vid.size(windowWidth, windowHeight);
+    vid.hide()
+    // debugger
     textAlign(CENTER);
 
     fft = new p5.FFT();
@@ -424,37 +454,31 @@ draw = () => {
     // translate(-width/2, -height/2)
 
     // =========================================
-
     // 3d / webgl camera capture draw
     // push();
-    // if (capture && capture.width) {
-    //     // for 3D/WEBGL
-    //     // https://github.com/aferriss/p5jsShaderExamples
-    //     // shader() sets the active shader with our shader
-    //     shader(camShader);
 
     //     // lets just send the cam to our shader as a uniform
     //     camShader.setUniform('tex0', capture);
 
     //     // send a slow frameCount to the shader as a time variable
     //     camShader.setUniform('time', frameCount * 0.01);
-
+    //     // debugger
     //     // lets map the mouseX to frequency and mouseY to amplitude
     //     // try playing with these to get a more or less distorted effect
     //     // 10 and 0.25 are just magic numbers that I thought looked good
-    //     // let freq = 10;
-    //     // let amp = 0.25;
-    //     let freq = map(mouseX, 0, width, 0, 10.0);
-    //     let amp = map(mouseY, 0, height, 0, 0.25);
+    //     let freq = 10;
+    //     let amp = 0.25;
+    //     // let freq = map(mouseX, 0, width, 0, 10.0);
+    //     // let amp = map(mouseY, 0, height, 0, 0.25);
 
     //     // send the two values to the shader
     //     camShader.setUniform('frequency', freq);
     //     camShader.setUniform('amplitude', amp);
         
-        // for 2D
-    //     image(capture, (width/2) - 310, (height/2) - 240, 640, 480)
+    //     // for 2D
+    //     // image(capture, (width/2) - 310, (height/2) - 240, 640, 480)
 
-    //     filter(THRESHOLD)
+    //     // filter(THRESHOLD)
     //     // filter(INVERT);
     // }
     // pop();
@@ -462,7 +486,7 @@ draw = () => {
     // 2d camera capture draw
     // push();
     // if (capture && capture.width) {
-    //     image(capture, (width/2) - 310, (height/2) - 240, 640, 480)
+    //     image(capture, (width/2), (height/2), 640, 480)
     //     filter(THRESHOLD)
     // }
     // pop();
@@ -607,8 +631,9 @@ draw = () => {
         // move in a direction until it hits one of those limits, then 'bounce' back in the other direction
         
         noStroke()
-        stroke(r, g, b, 100)
-        fill(255, 255, 255, 90)
+        // stroke(r, g, b, 100)
+        // stroke(r, g, b, 0)
+        // fill(255, 255, 255, 90)
         translate(adjusted_width, adjusted_height, 10)
         let t = millis() / 2000
         // let v = p5.Vector.fromAngle(t, 50)
@@ -618,7 +643,27 @@ draw = () => {
         directionalLight(255, 255, 255, 0, 0, -1);
         rotateY(t)
         // rotateX(t)
-        sphere(100, 16, 16);
+        // if (vid) {
+        // if (camShader) {
+            // debugger
+            
+            // texture(camShader);
+        // }
+        if (vid && vid.width && camShader) {
+            // debugger
+            // for 3D/WEBGL
+            // https://github.com/aferriss/p5jsShaderExamples
+            // shader() sets the active shader with our shader  
+            shader(camShader);
+            // lets just send the cam to our shader as a uniform
+            camShader.setUniform('tex0', vid);
+            // send a time variable to the shader
+            camShader.setUniform('time', frameCount * 0.01);
+            // debugger
+            texture(vid);
+            sphere(100, 16, 16);
+        }
+        
 
 
         // rotateX(frameCount * 0.01);
