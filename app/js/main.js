@@ -1,3 +1,5 @@
+
+
 // var token;
 // var authToken;
 
@@ -17,6 +19,22 @@
 //             if ( preTerm && preTerm.length > 0 ) {
 //                 search( preTerm );
 //             }
+//         }
+//     };
+  
+//     xmlHttp.send();
+// };
+
+// const getCache = function( key ) {
+//     var xmlHttp = new XMLHttpRequest();
+//     xmlHttp.open( 'GET', '/cache', true ); // true for asynchronous
+//     xmlHttp.onreadystatechange = function() {
+//         if ( xmlHttp.readyState == 4 && xmlHttp.status == 200 ) {
+//             // var results = JSON.parse( xmlHttp.response );
+//             var results = xmlHttp.response;
+//             console.log(results)
+//             // debugger
+//             return results
 //         }
 //     };
   
@@ -51,7 +69,6 @@
 //         // document.getElementById( 'loginButton' ).style.display = 'none';
 //     }
 // }
-
 
 
 const initialize = () => {
@@ -335,8 +352,8 @@ startLoop = () => {
 preload = () => {
     //   load the shader
     // camShader = loadShader('/shaders/sinewave_distortion/effect.vert', '/shaders/sinewave_distortion/effect.frag');
-    camShader = loadShader('/shaders/video_feedback/effect.vert', '/shaders/video_feedback/effect.frag');
-    // camShader = loadShader('/shaders/rgb_to_hsb/effect.vert', '/shaders/rgb_to_hsb/effect.frag');
+    // camShader = loadShader('/shaders/video_feedback/effect.vert', '/shaders/video_feedback/effect.frag');
+    camShader = loadShader('/shaders/rgb_to_hsb/effect.vert', '/shaders/rgb_to_hsb/effect.frag');
 }
 
 detectBeat = (level, micLevel) => {
@@ -387,12 +404,30 @@ addRect = (micLevel) => {
     visualizer.beat_counter += 1
 }
 
+const getOutline = function( img ) {
+    const WHITE = [255, 255, 255];
+    let contours = img.contours();
+    let largestContourImg;
+    let largestArea = 0;
+    let largestAreaIndex;
+
+    for (let i = 0; i < contours.size(); i++) {
+        if (contours.area(i) > largestArea) {
+        largestArea = contours.area(i);
+        largestAreaIndex = i;
+        }
+    }
+
+    largestContourImg.drawContour(contours, largestAreaIndex, GREEN, thickness, lineType);
+}
+
 setup = () => {
     windowResized()
     noLoop()
     let cnv = createCanvas(windowWidth, windowHeight, WEBGL);
     // let cnv = createCanvas(windowWidth, windowHeight);
     cnv.mousePressed(userStartAudio);
+    // cnv.mousePressed(getCache)
 
     // =================================
     // // rainbow cycle / rgb_to_hsb shader
@@ -431,6 +466,14 @@ setup = () => {
     };
     vid = createCapture(VIDEO)
     vid.size(windowWidth, windowHeight);
+    
+    let outline = null
+    // if (vid) {
+        // debugger
+        // outline = getOutline(vid)
+        // vid.hide()
+    // }
+
     vid.hide()
     textAlign(CENTER);
 
@@ -446,8 +489,10 @@ draw = () => {
     new_width = width * 2;
     new_height = height * 2;
     let counter_max = 10000;
-    var micLevel = 0;
-    var level = 0;
+    let micLevel;
+    let level;
+    // console.log('again')
+
     background(0)
     if (startAudio) {
         mic.start();
@@ -457,13 +502,14 @@ draw = () => {
 
     if (audioStarted) {
         micLevel = mic.getLevel();
+        print('miclevel', micLevel)
         level = amplitude.getLevel();
         detectBeat(level, micLevel);
     } else {     
         fill(255);   
         text('tap to start', width/2, height /2);
     }
-
+    // console.log(micLevel)
     // translate for WEBGL
     translate(-width, -height)
 
@@ -487,9 +533,16 @@ draw = () => {
         visualizer.counter = 1;
     }
 
-    let spectrum = fft.analyze();
+    // let spectrum = fft.analyze();
     // let energy = fft.getEnergy('bass', "treble")
 
+    // TOGGLE FOR COLOR FILL
+    // TURN COLOR BACKGROUND ON OFF
+    // 0 = Off
+    // 1 = On
+    let fillOn = 1
+    
+    
     noStroke();
     // fill(energy);
 
@@ -539,7 +592,7 @@ draw = () => {
         // stroke(200, 0, rect_color_offset, 90)
         stroke(r, g, b, 90)
         strokeWeight(3)
-        fill(200, 0, rect_color_offset, 80)
+        fill(200, 0, rect_color_offset, 80*fillOn)
 
         // left
         beginShape()
@@ -557,7 +610,7 @@ draw = () => {
         vertex(new_width, 1)
         endShape(CLOSE)
 
-        fill(200, 0, rect_color_offset, 65)
+        fill(200, 0, rect_color_offset, 65 * fillOn)
         // top
         beginShape()
         vertex(1, 1)
@@ -566,7 +619,7 @@ draw = () => {
         vertex(new_width, 1)
         endShape(CLOSE)
 
-        fill(r, g, b, 50)
+        fill(r, g, b, 50 * fillOn)
         // bottom
         beginShape()
         vertex(1, new_height)
@@ -587,7 +640,7 @@ draw = () => {
         endShape(CLOSE)
 
         // fill in the middle square
-        fill(r, g, b, 70)
+        fill(r, g, b, 70 * fillOn)
         beginShape()
         vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height - center_square_size)
         vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height + center_square_size)
@@ -605,9 +658,10 @@ draw = () => {
         // move in a direction until it hits one of those limits, then 'bounce' back in the other direction
         
         noStroke()
+        // background(0.5)
         // stroke(r, g, b, 100)
-        strokeWeight(1.5)
-        stroke(`rgba(${r}, ${g}, ${b}, 1.5)`)
+        // strokeWeight(1.5)
+        // stroke(`rgba(${r}, ${g}, ${b}, 1.5)`)
         // fill(255, 255, 255, 90)
         translate(adjusted_width, adjusted_height, 10)
         
@@ -620,7 +674,7 @@ draw = () => {
         // translate(v);
         // ====================
         let t = millis() / 3000
-        rotateY(t)
+        rotateY(180)
         // rotateX(t/2)
 
         directionalLight(255, 255, 255, 0, 0, -1);
@@ -657,7 +711,7 @@ draw = () => {
 
             // send mouseDown to the shader as a int (either 0 or 1)
             // everytime the counter is divisible by 100 lets reset the feedback
-            if (visualizer.counter % 100 == 0) {
+            if (visualizer.counter % 50 == 0) {
                 camShader.setUniform('mouseDown', 1);
             }
             else {
@@ -672,13 +726,29 @@ draw = () => {
 
             // draw the shaderlayer into the copy layer
             copyLayer.image(shaderLayer, 0, 0, width, height);
-
             // pass the shader as a texture
             texture(shaderLayer)
             // =================================
-
-            sphere(150, 16, 16);
+            // console.log('miclevel*10', micLevel * 10) 
+            // var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
+            // sphereMicLevel = map(round(micLevel * 100, 3), 0.000, 1.000, 0.80, 1.35)
+            sphere(80, 16, 16);
         }
+
+        pop()
+
+             
+        push()
+        translate(adjusted_width, adjusted_height, 10)
+        rotateY(t/2)
+
+        strokeWeight(1.5)
+        stroke(`rgba(${r}, ${g}, ${b}, 1.5)`)
+        var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
+        // sphereMicLevel = map(round(micLevel * 100, 3), 0.000, 1.000, 0.80, 1.35)
+        sphere(84, 16, 16);
+
+        // let t = millis() / 3000
 
         pop()
 
@@ -741,7 +811,7 @@ draw = () => {
         r.counter += sub_value + (0.05 * r.counter)
 
         if (r.first) {
-            fill(color_offset, 0, r.cfill)
+            fill(color_offset, 0, r.cfill, fillOn)
         }
         else {
             fill('rgba(0,0,0,0)')
@@ -774,4 +844,4 @@ draw = () => {
     }) 
 
     
-}
+} 

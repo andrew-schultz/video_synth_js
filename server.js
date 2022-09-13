@@ -5,6 +5,69 @@ var requestPromise = require( 'request-promise' );
 var bodyParser = require( 'body-parser' );
 var cookieParser = require( 'cookie-parser' );
 var querystring = require( 'querystring' );
+var three = require('three')
+
+// ===============================
+const redis = require('./redis');
+
+// const redis = require('redis');
+// const _ = require('lodash');
+// const clients = {};
+// let connectionTimeout;
+
+// function throwTimeoutError() {
+//   connectionTimeout = setTimeout(() => {
+//       throw new Error('Redis connection failed');
+//   }, 10000);
+// }
+// function instanceEventListeners({ conn }) {
+//   conn.on('connect', () => {
+//       console.log('CacheStore - Connection status: connected');
+//       clearTimeout(connectionTimeout);
+//   });
+//   conn.on('end', () => {
+//       console.log('CacheStore - Connection status: disconnected');
+//       throwTimeoutError();
+//   });
+//   conn.on('reconnecting', () => {
+//       console.log('CacheStore - Connection status: reconnecting');
+//       clearTimeout(connectionTimeout);
+//   });
+//   conn.on('error', (err) => {
+//       console.log('CacheStore - Connection status: error ', { err });
+//       throwTimeoutError();
+//   });
+// }
+// init = () => {
+//   const cacheInstance = redis.createClient('redis://127.0.0.1:637');
+//   clients.cacheInstance = cacheInstance;
+//   instanceEventListeners({ conn: cacheInstance });
+// };
+
+// var closeConnections = () => _.forOwn(clients, (conn) => conn.quit());
+// // var getClients = () => clients;
+
+// // init()
+
+redis.init()
+
+const redisClients = redis.getClients()
+console.log('clients', redisClients)
+
+const redisClient = redisClients.cacheInstance
+redisClient.connect().then( () => {
+  console.log('redisClient connected')
+})
+
+console.log('redisClient', redisClient)
+
+redis.setCache('foo', 'bar', (err, reply) => {
+  console.log('---------')
+  if (err) throw err;
+  console.log(reply);
+} );
+
+// ================================
 
 if ( !process.env.NODE_ENV || process.env.NODE_ENV === 'development' ) {
   require( 'dotenv' ).load();
@@ -66,6 +129,40 @@ var buildPayload = function( request ) {
 
   return payload
 };
+
+
+
+
+
+// const getRedisCache = function( path, payload, callback ) {
+  // var options = {
+  //   method: "POST",
+  //   uri: 'https://accounts.spotify.com/api/token',
+  //   headers: {
+  //     "Authorization": "Basic " + ( new Buffer( CLIENT_ID  + ":" + CLIENT_SECRET ).toString( 'base64' ) )
+  //   },
+  //   form: payload,
+  //   json: true
+  // };
+  // requestPromise( options).
+  // then( callback ).
+  // catch(
+  //   function( error ) {
+  //     console.log( 'its a token error' );
+  //     console.log( error );
+  //   }
+  // );
+
+
+  // connect to redis
+
+
+  // get the current cache
+// };
+
+
+
+
 
 var buildConnectPayload = function( request ) {
   var payload = {};
@@ -239,6 +336,7 @@ app.use( function( request, response, next ) {
 } );
 
 app.use( express.static( path.join( __dirname + '/app' )  ) );
+app.use( express.static( path.join( __dirname + '/node_modules' ) ) );
 app.use( express.static( path.join( __dirname + '/bin' ) ) );
 app.use( cookieParser() );
 
@@ -392,6 +490,13 @@ app.post( '/search', function( request, response ) {
 //     }
 //   );
 // } );
+
+app.get( '/cache', function ( request, response ) {
+  redis.getCache('foo').then( results => {
+    console.log('results', results)
+    response.send( results )
+  } );
+} );
 
 app.get( '/', function ( req, res ) {
   res.sendFile( path.join( __dirname + '/index.html' ) );
