@@ -107,6 +107,8 @@ class Visualizer {
         this.frequency = 3
         this.center_vertical = 30
         this.center_horizontal = 0
+        this.center_vertical_sphere = 30
+        this.center_horizontal_sphere = 0
         this.purge = 0
         this.lines = 0
         this.cfill = 0
@@ -170,10 +172,13 @@ var backgroundColor;
 var fillOn = 1 // integer 1 or 0 -- removes fill on walls
 var linesAndWalls = false // boolean
 var metronomeBoxes = true // boolean
-var movingCenter = true// boolean
+var movingCenter = false // boolean
 var middleSphere = true // boolean
 var justLines = false // boolean
 var rectangle_video = false; // boolean
+var justWalls = true
+var movingSphere = true
+var lockCenters = false
 
 // ===================
 // end toggles
@@ -393,9 +398,14 @@ detectBeat = (level, micLevel) => {
 onBeat = (micLevel) => {
     // console.log('add that beat')
 
-    moveCenter(micLevel)
+    if (movingCenter) {
+        moveCenter(micLevel)
+    }
+    if (movingSphere) {
+        moveSphereCenter(micLevel)
+    }
     addRect(micLevel)
-    addSphere(micLevel)
+    // addSphere(micLevel)
 }
 
 addSphere = (micLevel) => {
@@ -423,15 +433,107 @@ addRect = (micLevel) => {
     visualizer.beat_counter += 1
 }
 
+moveSphereCenter = (micLevel) => {
+    var noiseValue = noise(micLevel * (visualizer.counter % 2)) * 5
+    var scalar = 3;  // set the radius of circle
+    var startX = visualizer.center_vertical_sphere;	// set the x-coordinate for the circle center
+    var startY = visualizer.center_horizontal_sphere;	// set the y-coordinate for the circle center
+
+    // how do we say ok after x times turn right
+    // tbh it could be left or right if its in center
+    // could be a matrix? like tic tac toe
+
+    var down = (startX + noiseValue);
+    var up = (startX - noiseValue);
+    var left = (startY - noiseValue);
+    var right = (startY + noiseValue);
+    var limit = 400
+    if (startX < -limit) {
+        visualizer.center_vertical_sphere = up
+    }
+    if (startX > limit){
+        visualizer.center_vertical_sphere = down
+    }
+    if (startX > -limit && startX < limit){
+        // flip a coin man
+        var r = random(-1, 1);
+        if (r<0) {
+            visualizer.center_vertical_sphere = up
+        }
+        else if (r>0) {
+            visualizer.center_vertical_sphere = down
+        }
+    }
+    if (startY < -limit) {
+        visualizer.center_horizontal_sphere = right
+    }
+    if (startY > limit) {
+        visualizer.center_horizontal_sphere = left
+    }
+    if (startY > -limit && startY < limit){
+        // flip a coin man
+        var r = random(-1, 1);
+        if (r<0) {
+            visualizer.center_horizontal_sphere = right
+        }
+        else if (r>0) {
+            visualizer.center_horizontal_sphere = left
+        }
+    }
+
+}
+
 moveCenter = (micLevel) => {
-    var noiseValue = noise(micLevel * (visualizer.counter % 2)) * 10
+    var noiseValue = noise(micLevel * (visualizer.counter % 2)) * 5
     var scalar = 3;  // set the radius of circle
     var startX = visualizer.center_vertical;	// set the x-coordinate for the circle center
     var startY = visualizer.center_horizontal;	// set the y-coordinate for the circle center
-    var x = startX + scalar * cos(visualizer.counter);
-    var y = startY + scalar * sin(visualizer.counter);
-    visualizer.center_vertical = x
-    visualizer.center_horizontal = y
+
+    // how do we say ok after x times turn right
+    // tbh it could be left or right if its in center
+    // could be a matrix? like tic tac toe
+
+    var down = (startX + noiseValue);
+    var up = (startX - noiseValue);
+    var left = (startY - noiseValue);
+    var right = (startY + noiseValue);
+    var limit = 400
+    if (startX < -limit) {
+        visualizer.center_vertical = up
+    }
+    if (startX > limit){
+        visualizer.center_vertical = down
+    }
+    if (startX > -limit && startX < limit){
+        // flip a coin man
+        var r = random(-1, 1);
+        if (r<0) {
+            visualizer.center_vertical = up
+        }
+        else if (r>0) {
+            visualizer.center_vertical = down
+        }
+    }
+    if (startY < -limit) {
+        visualizer.center_horizontal = right
+    }
+    if (startY > limit) {
+        visualizer.center_horizontal = left
+    }
+    if (startY > -limit && startY < limit){
+        // flip a coin man
+        var r = random(-1, 1);
+        if (r<0) {
+            visualizer.center_horizontal = right
+        }
+        else if (r>0) {
+            visualizer.center_horizontal = left
+        }
+    }
+
+
+    // visualizer.center_vertical = x
+    // visualizer.center_horizontal = y
 }
 
 const getRotatedImage = (sourceImage, provideImage) => {
@@ -748,9 +850,9 @@ draw = () => {
     // moving center start
     // ================================
     if (movingCenter) {
-        if (visualizer.counter % 20 == 0) {
-            moveCenter(micLevel)
-        }
+        // if (visualizer.counter % 20 == 0) {
+        //     moveCenter(micLevel)
+        // }
     }
     // ================================
     // moving center stop
@@ -776,7 +878,7 @@ draw = () => {
     if (justLines) {
         if (audioStarted) {
             // don't show lines until audio/loop is started
-
+            push()
             center_square_size = 5
             // "hallway" lines
             // fill(0, 0, 0, 0)
@@ -837,7 +939,7 @@ draw = () => {
             vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height - center_square_size)
             endShape(CLOSE)
 
-
+            pop()
             // light coming from the middle square
             // directionalLight(255, 255, 255, adjusted_width, adjusted_height);
         }
@@ -853,7 +955,7 @@ draw = () => {
 
         if (audioStarted) {
             // don't show lines until audio/loop is started
-
+            push()
             center_square_size = 5
             // "hallway" lines
             // fill(0, 0, 0, 0)
@@ -919,10 +1021,92 @@ draw = () => {
 
             // light coming from the middle square
             // directionalLight(255, 255, 255, adjusted_width, adjusted_height+50);
+            pop()
         }
     }
     // ================================
     // lines and walls stop
+    // ================================
+
+    // ================================
+    // just walls stop
+    // ================================
+
+    if (justWalls) {
+
+        if (audioStarted) {
+            // don't show lines until audio/loop is started
+            push()
+            center_square_size = 5
+            noStroke()
+            // "hallway" lines
+            // fill(0, 0, 0, 0)
+            // stroke(200, 0, rect_color_offset, 90)
+            // stroke(r, g, b, 90)
+            // strokeWeight(3)
+            fill(200, 0, rect_color_offset, 80 * fillOn)
+
+            // left
+            beginShape()
+            vertex(1, 1)
+            vertex(adjusted_width - (aspect_ratio * center_square_size) , adjusted_height - center_square_size)
+            vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+            vertex(1, new_height)
+            endShape(CLOSE)
+
+            // right
+            beginShape()
+            vertex(new_width, new_height)
+            vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+            vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height - center_square_size)
+            vertex(new_width, 1)
+            endShape(CLOSE)
+
+            fill(200, 0, rect_color_offset, 65 * fillOn)
+            // top
+            beginShape()
+            vertex(1, 1)
+            vertex(adjusted_width - (aspect_ratio * center_square_size) , adjusted_height - center_square_size)
+            vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height - center_square_size)
+            vertex(new_width, 1)
+            endShape(CLOSE)
+
+            fill(r, g, b, 50 * fillOn)
+            // bottom
+            beginShape()
+            vertex(1, new_height)
+            vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+            vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+            vertex(new_width, new_height)
+            endShape(CLOSE)
+
+            stroke(200, 0, rect_color_offset, 90)
+            beginShape()
+            vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height - center_square_size)
+            vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height - center_square_size)
+            endShape(CLOSE)
+
+            beginShape()
+            vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+            vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+            endShape(CLOSE)
+
+            // fill in the middle square
+            fill(r, g, b, 70 * fillOn)
+            beginShape()
+            vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height - center_square_size)
+            vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+            vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height + center_square_size)
+            vertex(adjusted_width + (aspect_ratio * center_square_size), adjusted_height - center_square_size)
+            endShape(CLOSE)
+
+            pop()
+            // light coming from the middle square
+            // directionalLight(255, 255, 255, adjusted_width, adjusted_height+50);
+        }
+    }
+    // ================================
+    // just walls stop
     // ================================
 
 
@@ -931,108 +1115,103 @@ draw = () => {
     // ================================
 
     if (middleSphere) {
-        push()
-        // welp how can we have this guy move in and out?
-        // translate on the z axis?
-        // set an x, y, z limit
-        // move in a direction until it hits one of those limits, then 'bounce' back in the other direction
-        
-        noStroke()
-        // background(0.5)
-        // stroke(r, g, b, 100)
-        // strokeWeight(1.5)
-        // stroke(`rgba(${r}, ${g}, ${b}, 1.5)`)
-        // fill(255, 255, 255, 90)
-
-        var adjustedSphereHeight =  adjusted_height - 10;
-        translate(adjusted_width, adjustedSphereHeight, 10)
-        
-        // =====================
-        // set 'v' for 3d movement of sphere
-        // --------------------------------- 
-        // let v = p5.Vector.fromAngle(t, 50)
-        // let v = p5.Vector.fromAngles(t * 1.0, t * 1.3, 100)
-        // console.log(v)
-        // translate(v);
-        // ====================
-        var t = millis() / 3000
-        // rotateY(180)
-        rotateX(t/2)
-
-        directionalLight(255, 255, 255, 0, 0, -1);
-
-        if (vid && vid.width && camShader) {
-            // for 3D/WEBGL
-            // https://github.com/aferriss/p5jsShaderExamples
-
-            // =================================
-            // rainbow cycle / rgb_to_hsb shader
-            // --------------------------------- 
-            // // instead of just setting the active shader we are passing it to the createGraphics layer
-            // shaderTexture.shader(camShader);
-            // // here we're using setUniform() to send our uniform values to the shader
-            // camShader.setUniform('tex0', vid);
-            // camShader.setUniform('time', frameCount * 0.01);
-            // // passing the shaderTexture layer geometry to render on
-            // shaderTexture.rect(0,0,width,height);
-            // // pass the shader as a texture
-            // texture(shaderTexture);
-            // =================================
-
-            // =================================
-            // video_feedback shader
-            // --------------------------------- 
-            // shader() sets the active shader with our shader
-            shaderLayer.shader(camShader);
-
-            // lets just send the cam to our shader as a uniform
-            camShader.setUniform('tex0', vid);
-
-            // also send the copy layer to the shader as a uniform
-            camShader.setUniform('tex1', copyLayer);
-    
-            // send mouseDown to the shader as a int (either 0 or 1)
-            // everytime the counter is divisible by 100 lets reset the feedback
-            if (visualizer.counter % 50 == 0) {
-                camShader.setUniform('mouseDown', 1);
-            }
-            else {
-                // lets also allow clicking to reset the feedback
-                camShader.setUniform('mouseDown', int(mouseIsPressed));
-            }
-
-            camShader.setUniform('time', frameCount * 0.01);
-
-            // rect gives us some geometry on the screen
-            shaderLayer.rect(0, 0, width, height);
-
-            // draw the shaderlayer into the copy layer
-            copyLayer.image(shaderLayer, 0, 0, width, height);
-            // pass the shader as a texture
-            texture(shaderLayer)
-            // =================================
-            // console.log('miclevel*10', micLevel * 10) 
-            // var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
-            // sphereMicLevel = map(round(micLevel * 100, 3), 0.000, 1.000, 0.80, 1.35)
-            sphere(50, 16, 16);
+        if (lockCenters) {
+            var adjusted_height_sphere = (new_height/2) + (visualizer.center_vertical)
+            var adjusted_width_sphere = ((new_width/2) + (visualizer.center_horizontal))
         }
+
+        else {
+            var adjusted_height_sphere = (new_height/2) + (visualizer.center_vertical_sphere)
+            var adjusted_width_sphere = ((new_width/2) + (visualizer.center_horizontal_sphere))
+        }
+
+        var t = millis() / 3000
+        push()        
+            noStroke()
+
+            var adjustedSphereHeight =  adjusted_height_sphere - 10;
+            translate(adjusted_width_sphere, adjustedSphereHeight, 10)
+            
+            // =====================
+            // set 'v' for 3d movement of sphere
+            // --------------------------------- 
+            // let v = p5.Vector.fromAngle(t, 50)
+            // let v = p5.Vector.fromAngles(t * 1.0, t * 1.3, 100)
+            // console.log(v)
+            // translate(v);
+            // ====================
+            
+            // rotateY(180)
+            rotateY(-t/2)
+
+            directionalLight(255, 255, 255, 0, 0, -1);
+
+            if (vid && vid.width && camShader) {
+                // for 3D/WEBGL
+                // https://github.com/aferriss/p5jsShaderExamples
+
+                // =================================
+                // rainbow cycle / rgb_to_hsb shader
+                // --------------------------------- 
+                // // instead of just setting the active shader we are passing it to the createGraphics layer
+                // shaderTexture.shader(camShader);
+                // // here we're using setUniform() to send our uniform values to the shader
+                // camShader.setUniform('tex0', vid);
+                // camShader.setUniform('time', frameCount * 0.01);
+                // // passing the shaderTexture layer geometry to render on
+                // shaderTexture.rect(0,0,width,height);
+                // // pass the shader as a texture
+                // texture(shaderTexture);
+                // =================================
+
+                // =================================
+                // video_feedback shader
+                // --------------------------------- 
+                // shader() sets the active shader with our shader
+                shaderLayer.shader(camShader);
+
+                // lets just send the cam to our shader as a uniform
+                camShader.setUniform('tex0', vid);
+
+                // also send the copy layer to the shader as a uniform
+                camShader.setUniform('tex1', copyLayer);
+        
+                // send mouseDown to the shader as a int (either 0 or 1)
+                // everytime the counter is divisible by 100 lets reset the feedback
+                if (visualizer.counter % 50 == 0) {
+                    camShader.setUniform('mouseDown', 1);
+                }
+                else {
+                    // lets also allow clicking to reset the feedback
+                    camShader.setUniform('mouseDown', int(mouseIsPressed));
+                }
+
+                camShader.setUniform('time', frameCount * 0.01);
+
+                // rect gives us some geometry on the screen
+                shaderLayer.rect(0, 0, width, height);
+
+                // draw the shaderlayer into the copy layer
+                copyLayer.image(shaderLayer, 0, 0, width, height);
+                // pass the shader as a texture
+                texture(shaderLayer)
+                // =================================
+                // console.log('miclevel*10', micLevel * 10) 
+                // var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
+                // sphereMicLevel = map(round(micLevel * 100, 3), 0.000, 1.000, 0.80, 1.35)
+                sphere(50, 16, 16);
+            }
 
         pop()
 
                 
         push()
-        translate(adjusted_width, adjustedSphereHeight, 10)
-        rotateY(t/2)
-    
-        strokeWeight(1.5)
-        stroke(`rgba(${r}, ${g}, ${b}, 1.5)`)
-        var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
-        // sphere
-        MicLevel = map(round(micLevel * 100, 3), 0.000, 1.000, 0.80, 1.35)
-        sphere(53, 16, 16);
-
-        // let t = millis() / 3000
-
+            noFill()
+            translate(adjusted_width_sphere, adjustedSphereHeight, 10)
+            rotateY(t/2)     
+            strokeWeight(1.5)
+            stroke(`rgba(${r}, ${g}, ${b}, 1.5)`)
+            sphere(53, 16, 16);
         pop()
 
         // light coming from the middle square
