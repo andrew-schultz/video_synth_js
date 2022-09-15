@@ -10,6 +10,26 @@ var three = require('three')
 // ===============================
 const redis = require('./redis');
 
+// import express from 'express'
+// import path from 'path'
+// // import redis from 'redis'
+// import { createClient } from 'redis'
+// import ejs from 'ejs'
+// import requestPromise from 'request-promise'
+// import cookieParser from 'cookie-parser'
+// import bodyParser from 'body-parser'
+// import querystring from 'querystring'
+// import * as dotenv from 'dotenv' // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
+
+// import three from 'three'
+
+// import {fileURLToPath} from 'url';
+
+// const __filename = fileURLToPath(import.meta.url);
+
+// 👇️ "/home/john/Desktop/javascript"
+// const __dirname = path.dirname(__filename);
+
 // const redis = require('redis');
 // const _ = require('lodash');
 // const clients = {};
