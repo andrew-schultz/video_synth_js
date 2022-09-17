@@ -1,5 +1,23 @@
 
+// ===================
+// toggles
+// ===================
 
+var fillOn = 1 // integer 1 or 0 -- removes fill on walls
+var linesAndWalls = false // boolean
+var metronomeBoxes = true // boolean
+var movingCenter = true // boolean
+var middleSphere = true // boolean
+var justLines = false // boolean
+var rectangle_video = false; // boolean
+var justWalls = false
+var movingSphere = false
+var lockCenters = false
+var movingSphereSmooth = true
+
+// ===================
+// end toggles
+// ===================
 
 // var token;
 // var authToken;
@@ -107,8 +125,9 @@ class Visualizer {
         this.frequency = 3
         this.center_vertical = 30
         this.center_horizontal = 0
-        this.center_vertical_sphere = 30
+        this.center_vertical_sphere = 90
         this.center_horizontal_sphere = 0
+        this.center_z_sphere = 0
         this.purge = 0
         this.lines = 0
         this.cfill = 0
@@ -119,6 +138,7 @@ class Visualizer {
         this.global_bool = {'odd': true, 'even': true}
         this.color_adjust = 0
         this.sphere_list = []
+        this.sphere_velocity = createVector(0, 0, 0)
     }
 }
 
@@ -146,7 +166,7 @@ class SphereObj {
     
 }
 
-const visualizer = new Visualizer();
+let visualizer;
 let videoDeviceId;
 let audioDeviceId;
 let capture;
@@ -164,25 +184,6 @@ let copyLayer;
 var amplitude;
 
 var backgroundColor;
-
-// ===================
-// toggles
-// ===================
-
-var fillOn = 1 // integer 1 or 0 -- removes fill on walls
-var linesAndWalls = false // boolean
-var metronomeBoxes = true // boolean
-var movingCenter = false // boolean
-var middleSphere = true // boolean
-var justLines = false // boolean
-var rectangle_video = false; // boolean
-var justWalls = true
-var movingSphere = true
-var lockCenters = false
-
-// ===================
-// end toggles
-// ===================
 
 // rectangle parameters
 var rectRotate = true;
@@ -404,6 +405,9 @@ onBeat = (micLevel) => {
     if (movingSphere) {
         moveSphereCenter(micLevel)
     }
+    if (movingSphereSmooth) {
+        updateSphereVelocity(micLevel)
+    }
     addRect(micLevel)
     // addSphere(micLevel)
 }
@@ -432,6 +436,112 @@ addRect = (micLevel) => {
     visualizer.rect_list.push(rect_obj)
     visualizer.beat_counter += 1
 }
+
+// maybe the function thats called be onBeat should be different from the one that actually moves the sphere
+// the onBeat one just updates the velocity/directio
+
+
+moveSphereSmooth = () => {
+    var startX = visualizer.center_vertical_sphere;	// set the x-coordinate for the circle center
+    var startY = visualizer.center_horizontal_sphere;	// set the y-coordinate for the circle center
+    var startZ = visualizer.center_z_sphere;
+    var xlimit = 80
+    var ylimit = 100
+    var zlimit = 30
+    var current_velocity = visualizer.sphere_velocity
+    var currentPosition = createVector(startX, startY, startZ)
+    
+    // edge detection
+
+    var newX = visualizer.sphere_velocity.x
+    var newY = visualizer.sphere_velocity.y
+    var newZ = visualizer.sphere_velocity.z
+
+    if (startX < -xlimit) {
+        if (newX < 0) {
+            newX = newX * -1
+            newZ = newZ * -1
+        }
+    } 
+    else if (startX > xlimit) {
+        // if x is already negative dont do anything cause you'll make it positive you dummy
+        if (newX > 0) {
+            newX = newX * -1
+            newZ = newZ * -1
+        } 
+    }
+    //------- 
+    if (startY < -ylimit) {
+        if (newY < 0) {
+            newY = newY * -1
+        }
+    }
+    else if (startY > ylimit) {
+        if (newY > 0) {
+            newY = newY * -1
+        }
+    }
+    //------- 
+    if (startZ < -zlimit) {
+        if (newZ < 0) {
+            newZ = 0
+        }
+    }
+    else if (startZ > zlimit) {
+        if (newZ > 0) {
+            newZ = 0
+        }
+    }
+
+    // we want z to move with x
+    // it should be a fraction of the velocity assigned for z maybe?
+    // 
+
+    current_velocity = createVector(newX, newY, newZ)
+    visualizer.sphere_velocity = current_velocity
+
+    currentPosition.add(current_velocity)
+    // console.log(currentPosition)
+    // currentPosition.x is the new center_vertical_sphere
+    // currentPosition.y is the new center_vertical_sphere
+    visualizer.center_vertical_sphere = currentPosition.x
+    visualizer.center_horizontal_sphere = currentPosition.y
+    visualizer.center_z_sphere = currentPosition.z
+}
+
+// this just updates the velocity when an onBeat is detected, ya dummy
+updateSphereVelocity = (micLevel) => {
+    // get the current velocity so we know what direction we're going in
+    // if the values are negative we want the new ones to be negative too
+    var old_velocity = visualizer.sphere_velocity
+
+    // var noiseValueX = map(noise(micLevel) * 5, -3, 3, 0, 1)
+    // var noiseValueY = map(noise(micLevel) * 2, -3, 3, 0, 1)
+
+    var noiseValueX = noise(micLevel) * 5
+    var noiseValueY = noise(micLevel) * 2
+    // print('noisevalueX', noiseValueX)
+
+    // var noiseValueZ = noise(micLevel)
+    var noiseValueZ = noiseValueX / 3
+
+    let newX = noiseValueX * 1
+    let newY = noiseValueY * 1
+    let newZ = noiseValueZ * 1
+
+    if (old_velocity.x < 0){
+        newX = noiseValueX * -1
+    } 
+    if (old_velocity.y < 0){
+        newY = noiseValueY * -1
+    }
+    if (old_velocity.z < 0){
+        newZ = noiseValueZ * -1
+    }
+    // console.log('newx', newX)
+    visualizer.sphere_velocity = createVector(newX, newY, newZ)
+}
+
 
 moveSphereCenter = (micLevel) => {
     var noiseValue = noise(micLevel * (visualizer.counter % 2)) * 5
@@ -572,6 +682,8 @@ const getOutline = function( img ) {
 setup = () => {
     windowResized()
     noLoop()
+    visualizer = new Visualizer();
+    noiseSeed(visualizer.center_vertical)
     let cnv = createCanvas(windowWidth, windowHeight, WEBGL);
     // let cnv = createCanvas(windowWidth, windowHeight);
     cnv.mousePressed(userStartAudio);
@@ -850,13 +962,20 @@ draw = () => {
     // moving center start
     // ================================
     if (movingCenter) {
-        // if (visualizer.counter % 20 == 0) {
-        //     moveCenter(micLevel)
-        // }
+        if (visualizer.counter % 20 == 0) {
+            moveCenter(micLevel)
+        }
     }
     // ================================
     // moving center stop
     // ================================
+
+    if (movingSphereSmooth) {
+        if (visualizer.counter % 5 == 0) {
+            moveSphereSmooth()
+        }
+    }
+
 
 
     // ================================
@@ -1130,8 +1249,8 @@ draw = () => {
             noStroke()
 
             var adjustedSphereHeight =  adjusted_height_sphere - 10;
-            translate(adjusted_width_sphere, adjustedSphereHeight, 10)
-            
+            translate(adjusted_width_sphere, adjustedSphereHeight, visualizer.center_z_sphere)
+        
             // =====================
             // set 'v' for 3d movement of sphere
             // --------------------------------- 
@@ -1207,7 +1326,7 @@ draw = () => {
                 
         push()
             noFill()
-            translate(adjusted_width_sphere, adjustedSphereHeight, 10)
+            translate(adjusted_width_sphere, adjustedSphereHeight, visualizer.center_z_sphere)
             rotateY(t/2)     
             strokeWeight(1.5)
             stroke(`rgba(${r}, ${g}, ${b}, 1.5)`)
