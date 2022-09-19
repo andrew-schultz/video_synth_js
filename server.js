@@ -6,6 +6,7 @@ var bodyParser = require( 'body-parser' );
 var cookieParser = require( 'cookie-parser' );
 var querystring = require( 'querystring' );
 var three = require('three')
+// const OSC = require('osc-js')
 
 // ===============================
 const redis = require('./redis');
@@ -510,6 +511,35 @@ app.post( '/search', function( request, response ) {
 //     }
 //   );
 // } );
+
+// ===============================
+// OSC stuff if we ever bring that back
+// -------
+
+// const speedHandler = (address, args) => {
+//   // let decimal = round(args[0], 1)
+//   // let arg_int = int(decimal * 15)
+//   console.log('address', address)
+//   console.log('args', args)
+// }
+
+// const ip = "127.0.0.1"
+// const port_i = 1337
+
+// const osc = new OSC({ plugin: new OSC.DatagramPlugin() })
+// osc.open({ port: port_i })
+
+// // dispatcher.map("/speed", speed_handler)
+// // dispatcher.map("/frequency", frequency_handler)
+// // dispatcher.map("/vertical", center_vertical_handler)
+// // dispatcher.map("/horizontal", center_horizontal_handler)
+// // dispatcher.map("/purge", purge_handler)
+// // dispatcher.map("/lines", lines_handler)
+// // dispatcher.map("/fill", fill_handler)
+
+// osc.on("/speed", speedHandler)
+
+// ===============================
 
 app.get( '/cache', function ( request, response ) {
   redis.getCache('foo').then( results => {

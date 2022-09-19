@@ -3,17 +3,37 @@
 // toggles
 // ===================
 
-var fillOn = 1 // integer 1 or 0 -- removes fill on walls
-var linesAndWalls = false // boolean
-var metronomeBoxes = true // boolean
-var movingCenter = true // boolean
-var middleSphere = true // boolean
-var justLines = false // boolean
-var rectangle_video = false; // boolean
-var justWalls = false
-var movingSphere = false
-var lockCenters = false
-var movingSphereSmooth = true
+// var fillOn = 1 // integer 1 or 0 -- removes fill on walls
+// var linesAndWalls = false // boolean
+// var metronomeBoxes = true // boolean
+// var movingCenter = true // boolean
+// var middleSphere = false // boolean
+// var justLines = false // boolean
+// var rectangleVideo = false; // boolean
+// var justWalls = false
+// var movingSphere = false
+// var lockCenters = false
+// var movingSphereSmooth = true
+
+var toggles = {
+    'fillOn': 0,
+    'linesAndWalls': false,
+    'metronomeBoxes': false,
+    'movingCenter': false, // boolean
+    'middleSphere': false, // boolean
+    'justLines': false, // boolean
+    'rectangleVideo': false, // boolean
+    'justWalls': false,
+    'movingSphere': false,
+    'lockCenters': false,
+    'movingSphereSmooth': false,
+}
+
+var multipliers = {
+    'metronomeRate': 5,
+    'movementRange': 1,
+}
+
 
 // ===================
 // end toggles
@@ -89,6 +109,28 @@ var movingSphereSmooth = true
 //     }
 // }
 
+const setVarToggle = (name) => {
+    if (name in toggles) {
+        if (Number.isInteger(toggles[name])) {
+            // if its an int and its true (1), make it 0
+            if (toggles[name]) {
+                toggles[name] = 0
+            }
+            else {
+                toggles[name] = 1
+            }
+        }
+        else {
+            toggles[name] = !toggles[name]
+        }
+    }
+}
+
+const setMultiplier = (key, event) => {
+    var value = int(event.currentTarget.value) ? event.currentTarget.value : 1
+    console.log(key, value)
+    multipliers[key] = value;
+}
 
 const initialize = () => {
     // this isn't going to work until I get https working......
@@ -399,13 +441,13 @@ detectBeat = (level, micLevel) => {
 onBeat = (micLevel) => {
     // console.log('add that beat')
 
-    if (movingCenter) {
+    if (toggles['movingCenter']) {
         moveCenter(micLevel)
     }
-    if (movingSphere) {
+    if (toggles['movingSphere']) {
         moveSphereCenter(micLevel)
     }
-    if (movingSphereSmooth) {
+    if (toggles['movingSphereSmooth']) {
         updateSphereVelocity(micLevel)
     }
     addRect(micLevel)
@@ -607,7 +649,7 @@ moveCenter = (micLevel) => {
     var up = (startX - noiseValue);
     var left = (startY - noiseValue);
     var right = (startY + noiseValue);
-    var limit = 400
+    var limit = multipliers['movementRange'] * 100
     if (startX < -limit) {
         visualizer.center_vertical = up
     }
@@ -854,7 +896,7 @@ draw = () => {
 // all drawing function below this line
 // ================================// ================================// ================================// ================================
 
-    if (rectangle_video) {
+    if (toggles['rectangleVideo']) {
 
 
         push()
@@ -961,7 +1003,7 @@ draw = () => {
     // ================================
     // moving center start
     // ================================
-    if (movingCenter) {
+    if (toggles['movingCenter']) {
         if (visualizer.counter % 20 == 0) {
             moveCenter(micLevel)
         }
@@ -970,7 +1012,7 @@ draw = () => {
     // moving center stop
     // ================================
 
-    if (movingSphereSmooth) {
+    if (toggles['movingSphereSmooth']) {
         if (visualizer.counter % 5 == 0) {
             moveSphereSmooth()
         }
@@ -981,9 +1023,9 @@ draw = () => {
     // ================================
     // metronome boxes start
     // ================================
-    if (metronomeBoxes) {
+    if (toggles['metronomeBoxes']) {
         // if counter is divisible by 50 add a rect
-        if (visualizer.counter % 20 == 0) {
+        if (visualizer.counter % (10 * multipliers['metronomeRate']) == 0) {
             addRect(micLevel)
         }
     }
@@ -994,7 +1036,7 @@ draw = () => {
     // ================================
     // just lines start
     // ================================
-    if (justLines) {
+    if (toggles['justLines']) {
         if (audioStarted) {
             // don't show lines until audio/loop is started
             push()
@@ -1004,7 +1046,7 @@ draw = () => {
             // stroke(200, 0, rect_color_offset, 90)
             stroke(r, g, b, 90)
             strokeWeight(1)
-            fill(200, 0, rect_color_offset, 80 * fillOn)
+            fill(200, 0, rect_color_offset, 80 * toggles['fillOn'])
 
             // left
             beginShape()
@@ -1070,7 +1112,7 @@ draw = () => {
     // ================================
     // lines and walls start
     // ================================
-    if (linesAndWalls) {
+    if (toggles['linesAndWalls']) {
 
         if (audioStarted) {
             // don't show lines until audio/loop is started
@@ -1081,7 +1123,7 @@ draw = () => {
             stroke(200, 0, rect_color_offset, 90)
             // stroke(r, g, b, 90)
             strokeWeight(3)
-            fill(200, 0, rect_color_offset, 80 * fillOn)
+            fill(200, 0, rect_color_offset, 80 * toggles['fillOn'])
 
             // left
             beginShape()
@@ -1099,7 +1141,7 @@ draw = () => {
             vertex(new_width, 1)
             endShape(CLOSE)
 
-            fill(200, 0, rect_color_offset, 65 * fillOn)
+            fill(200, 0, rect_color_offset, 65 * toggles['fillOn'])
             // top
             beginShape()
             vertex(1, 1)
@@ -1108,7 +1150,7 @@ draw = () => {
             vertex(new_width, 1)
             endShape(CLOSE)
 
-            fill(r, g, b, 50 * fillOn)
+            fill(r, g, b, 50 * toggles['fillOn'])
             // bottom
             beginShape()
             vertex(1, new_height)
@@ -1129,7 +1171,7 @@ draw = () => {
             endShape(CLOSE)
 
             // fill in the middle square
-            fill(r, g, b, 70 * fillOn)
+            fill(r, g, b, 70 * toggles['fillOn'])
             beginShape()
             vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height - center_square_size)
             vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height + center_square_size)
@@ -1151,7 +1193,7 @@ draw = () => {
     // just walls stop
     // ================================
 
-    if (justWalls) {
+    if (toggles['justWalls']) {
 
         if (audioStarted) {
             // don't show lines until audio/loop is started
@@ -1163,7 +1205,7 @@ draw = () => {
             // stroke(200, 0, rect_color_offset, 90)
             // stroke(r, g, b, 90)
             // strokeWeight(3)
-            fill(200, 0, rect_color_offset, 80 * fillOn)
+            fill(200, 0, rect_color_offset, 80 * toggles['fillOn'])
 
             // left
             beginShape()
@@ -1181,7 +1223,7 @@ draw = () => {
             vertex(new_width, 1)
             endShape(CLOSE)
 
-            fill(200, 0, rect_color_offset, 65 * fillOn)
+            fill(200, 0, rect_color_offset, 65 * toggles['fillOn'])
             // top
             beginShape()
             vertex(1, 1)
@@ -1190,7 +1232,7 @@ draw = () => {
             vertex(new_width, 1)
             endShape(CLOSE)
 
-            fill(r, g, b, 50 * fillOn)
+            fill(r, g, b, 50 * toggles['fillOn'])
             // bottom
             beginShape()
             vertex(1, new_height)
@@ -1211,7 +1253,7 @@ draw = () => {
             endShape(CLOSE)
 
             // fill in the middle square
-            fill(r, g, b, 70 * fillOn)
+            fill(r, g, b, 70 * toggles['fillOn'])
             beginShape()
             vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height - center_square_size)
             vertex(adjusted_width - (aspect_ratio * center_square_size), adjusted_height + center_square_size)
@@ -1233,8 +1275,8 @@ draw = () => {
     // sphere stuff in the middle start
     // ================================
 
-    if (middleSphere) {
-        if (lockCenters) {
+    if (toggles['middleSphere']) {
+        if (toggles['lockCenters']) {
             var adjusted_height_sphere = (new_height/2) + (visualizer.center_vertical)
             var adjusted_width_sphere = ((new_width/2) + (visualizer.center_horizontal))
         }
@@ -1395,7 +1437,7 @@ draw = () => {
         r.counter += sub_value + (0.05 * r.counter)
 
         if (r.first) {
-            fill(color_offset, 0, r.cfill, fillOn)
+            fill(color_offset, 0, r.cfill, toggles['fillOn'])
         }
         else {
             fill('rgba(0,0,0,0)')

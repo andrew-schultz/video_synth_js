@@ -10,6 +10,90 @@
         <select id="videoSourceSelect" onchange="setVideoSource()" name="video"></select>
         <select id="audioSourceSelect" onchange="setAudioSource()" name="audio"></select>
         <button id="start" onclick="startLoop()">Start</button>
+
+        <div class="sidebar">
+            <div class="containers">
+                <div class="toggles_container main_container">
+                    <div class="toggle_container sub_container row">
+                        <label for="fillOn">fill On</label>
+                        <input id="fillOn" type="checkbox" onchange="setVarToggle('fillOn')" name="fillOn"></input>
+                    </div>
+                    
+                    <div class="toggle_container sub_container row">
+                        <label for="justLines">justLines</label>
+                        <input id="justLines" type="checkbox" onchange="setVarToggle('justLines')" name="justLines"></input>
+                    </div>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="justWalls">justWalls</label>
+                        <input id="justWalls" type="checkbox" onchange="setVarToggle('justWalls')" name="justWalls"></input>    
+                    </div>
+                    
+                    <div class="toggle_container sub_container row">
+                        <label for='linesAndWalls'>lines and walls</label>
+                        <input id="linesAndWalls" type="checkbox" onchange="setVarToggle('linesAndWalls')" name="linesAndWalls"></input>
+                    </div>
+
+                    <br>
+                    
+                    <div class="toggle_container sub_container row">
+                        <label for="middleSphere">middleSphere</label>
+                        <input id="middleSphere" type="checkbox" onchange="setVarToggle('middleSphere')" name="middleSphere"></input>
+                    </div>
+                    
+                    <div class="toggle_container sub_container row">
+                        <label for="movingSphere">movingSphere</label>
+                        <input id="movingSphere" type="checkbox" onchange="setVarToggle('movingSphere')" name="movingSphere"></input>    
+                    </div>
+                    
+                    <div class="toggle_container sub_container row">
+                        <label for="movingSphereSmooth">movingSphereSmooth</label>
+                        <input id="movingSphereSmooth" type="checkbox" onchange="setVarToggle('movingSphereSmooth')" name="movingSphereSmooth"></input>
+                    </div>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="movingCenter">movingCenter</label>
+                        <input id="movingCenter" type="checkbox" onchange="setVarToggle('movingCenter')" name="movingCenter"></input>
+                    </div>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="lockCenters">lockCenters</label>
+                        <input id="lockCenters" type="checkbox" onchange="setVarToggle('lockCenters')" name="lockCenters"></input>
+                    </div>
+
+                    <br>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="metronomBoxes">metronomeBoxes</label>
+                        <input id="metronomeBoxes" type="checkbox" onchange="setVarToggle('metronomeBoxes')" name="metronomeBoxes"></input>
+                    </div>
+
+                    <br>
+                    
+                    <div class="toggle_container sub_container row">
+                        <label for="rectangleVideo">rectangleVideo</label>
+                        <input id="rectangleVideo" type="checkbox" onchange="setVarToggle('rectangleVideo')" name="rectangleVideo"></input>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="multipliers_container main_container">
+                    <div class="multiplier_container sub_container column">
+                        <label for="metronomeRate">metronomeRate</label>
+                        <input id="metronomeRate" type="range" min="1" max="10" value="5" onchange="setMultiplier('metronomeRate', event)">
+                    </div>
+                    
+                    <div class="multiplier_container sub_container column">
+                        <label for="movementRange">movementRange</label>
+                        <input id="movementRange" type="range" min="1" max="10" value="1" onchange="setMultiplier('movementRange', event)">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="expand_toggles" onclick="expandToggles()">>></div>
+        </div>
+        
         <script src="js/p5.min.js"></script>
         <script src="js/p5.sound.min.js"></script>
         <!-- <script src="js/melty_marble.js" type="module"></script> -->
