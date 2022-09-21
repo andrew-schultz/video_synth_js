@@ -14,6 +14,7 @@
 // var movingSphere = false
 // var lockCenters = false
 // var movingSphereSmooth = true
+// var middleSphereVideo = false
 
 var toggles = {
     'fillOn': 0,
@@ -21,6 +22,7 @@ var toggles = {
     'metronomeBoxes': false,
     'movingCenter': false, // boolean
     'middleSphere': false, // boolean
+    'middleSphereVideo': false,
     'justLines': false, // boolean
     'rectangleVideo': false, // boolean
     'justWalls': false,
@@ -923,10 +925,10 @@ draw = () => {
         // console.log(v)
         // translate(v);
         // ====================
-        var t = millis() / 3000
+        // var t = millis() / 3000
         // rotateY(180)
         // rotateZ(t/2)
-        rotate(t/2)
+        // rotate(t/2)
 
         // directionalLight(255, 255, 255, 0, 0, -1);
 
@@ -991,9 +993,10 @@ draw = () => {
             // console.log('miclevel*10', micLevel * 10) 
             // var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
             // sphereMicLevel = map(round(micLevel * 100, 3), 0.000, 1.000, 0.80, 1.35)
-            sphere(50, 16, 16);
-            // print('do the rect')
-            // rect(0, 0, 305, 305)
+            
+            // not perfect but it'll do
+            rect(-100, -60, 200, 120);
+            // sphere(50, 16, 16);
         }
 
         pop()
@@ -1040,6 +1043,7 @@ draw = () => {
         if (audioStarted) {
             // don't show lines until audio/loop is started
             push()
+            translate(0, 0, -10)
             center_square_size = 5
             // "hallway" lines
             // fill(0, 0, 0, 0)
@@ -1117,6 +1121,7 @@ draw = () => {
         if (audioStarted) {
             // don't show lines until audio/loop is started
             push()
+            translate(0, 0, -10)
             center_square_size = 5
             // "hallway" lines
             // fill(0, 0, 0, 0)
@@ -1198,6 +1203,7 @@ draw = () => {
         if (audioStarted) {
             // don't show lines until audio/loop is started
             push()
+            translate(0, 0, -10)
             center_square_size = 5
             noStroke()
             // "hallway" lines
@@ -1306,63 +1312,63 @@ draw = () => {
             rotateY(-t/2)
 
             directionalLight(255, 255, 255, 0, 0, -1);
-
-            if (vid && vid.width && camShader) {
-                // for 3D/WEBGL
-                // https://github.com/aferriss/p5jsShaderExamples
-
-                // =================================
-                // rainbow cycle / rgb_to_hsb shader
-                // --------------------------------- 
-                // // instead of just setting the active shader we are passing it to the createGraphics layer
-                // shaderTexture.shader(camShader);
-                // // here we're using setUniform() to send our uniform values to the shader
-                // camShader.setUniform('tex0', vid);
-                // camShader.setUniform('time', frameCount * 0.01);
-                // // passing the shaderTexture layer geometry to render on
-                // shaderTexture.rect(0,0,width,height);
-                // // pass the shader as a texture
-                // texture(shaderTexture);
-                // =================================
-
-                // =================================
-                // video_feedback shader
-                // --------------------------------- 
-                // shader() sets the active shader with our shader
-                shaderLayer.shader(camShader);
-
-                // lets just send the cam to our shader as a uniform
-                camShader.setUniform('tex0', vid);
-
-                // also send the copy layer to the shader as a uniform
-                camShader.setUniform('tex1', copyLayer);
-        
-                // send mouseDown to the shader as a int (either 0 or 1)
-                // everytime the counter is divisible by 100 lets reset the feedback
-                if (visualizer.counter % 50 == 0) {
-                    camShader.setUniform('mouseDown', 1);
+            if (toggles['middleSphereVideo']) {
+                if (vid && vid.width && camShader) {
+                    // for 3D/WEBGL
+                    // https://github.com/aferriss/p5jsShaderExamples
+    
+                    // =================================
+                    // rainbow cycle / rgb_to_hsb shader
+                    // --------------------------------- 
+                    // // instead of just setting the active shader we are passing it to the createGraphics layer
+                    // shaderTexture.shader(camShader);
+                    // // here we're using setUniform() to send our uniform values to the shader
+                    // camShader.setUniform('tex0', vid);
+                    // camShader.setUniform('time', frameCount * 0.01);
+                    // // passing the shaderTexture layer geometry to render on
+                    // shaderTexture.rect(0,0,width,height);
+                    // // pass the shader as a texture
+                    // texture(shaderTexture);
+                    // =================================
+    
+                    // =================================
+                    // video_feedback shader
+                    // --------------------------------- 
+                    // shader() sets the active shader with our shader
+                    shaderLayer.shader(camShader);
+    
+                    // lets just send the cam to our shader as a uniform
+                    camShader.setUniform('tex0', vid);
+    
+                    // also send the copy layer to the shader as a uniform
+                    camShader.setUniform('tex1', copyLayer);
+            
+                    // send mouseDown to the shader as a int (either 0 or 1)
+                    // everytime the counter is divisible by 100 lets reset the feedback
+                    if (visualizer.counter % 50 == 0) {
+                        camShader.setUniform('mouseDown', 1);
+                    }
+                    else {
+                        // lets also allow clicking to reset the feedback
+                        camShader.setUniform('mouseDown', int(mouseIsPressed));
+                    }
+    
+                    camShader.setUniform('time', frameCount * 0.01);
+    
+                    // rect gives us some geometry on the screen
+                    shaderLayer.rect(0, 0, width, height);
+    
+                    // draw the shaderlayer into the copy layer
+                    copyLayer.image(shaderLayer, 0, 0, width, height);
+                    // pass the shader as a texture
+                    texture(shaderLayer)
+                    // =================================
+                    // console.log('miclevel*10', micLevel * 10) 
+                    // var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
+                    // sphereMicLevel = map(round(micLevel * 100, 3), 0.000, 1.000, 0.80, 1.35)
+                    sphere(50, 16, 16);
                 }
-                else {
-                    // lets also allow clicking to reset the feedback
-                    camShader.setUniform('mouseDown', int(mouseIsPressed));
-                }
-
-                camShader.setUniform('time', frameCount * 0.01);
-
-                // rect gives us some geometry on the screen
-                shaderLayer.rect(0, 0, width, height);
-
-                // draw the shaderlayer into the copy layer
-                copyLayer.image(shaderLayer, 0, 0, width, height);
-                // pass the shader as a texture
-                texture(shaderLayer)
-                // =================================
-                // console.log('miclevel*10', micLevel * 10) 
-                // var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
-                // sphereMicLevel = map(round(micLevel * 100, 3), 0.000, 1.000, 0.80, 1.35)
-                sphere(50, 16, 16);
             }
-
         pop()
 
                 
@@ -1409,6 +1415,8 @@ draw = () => {
 
 
     // ===============================
+    push()
+    translate(0, 0, -10)
     visualizer.rect_list.forEach((r, index) => {
         if (((new_width / 1) - r.counter) < 1 ) {
             visualizer.rect_list.splice(index, 1)
@@ -1468,6 +1476,7 @@ draw = () => {
         // debugger
         endShape(CLOSE)
     }) 
+    pop()
 
     
 } 
