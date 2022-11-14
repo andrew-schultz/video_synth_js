@@ -59,3 +59,9 @@ body {
   padding: 5px;
   border-radius: 0 30% 30% 0;
 }
+
+#hidden_video_player {
+  position: absolute;
+  width: 500px;
+  left: -500px;
+}

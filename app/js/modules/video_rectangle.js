@@ -1,11 +1,13 @@
+export const videoRectangle = () => {
+    if (toggles['rectangleVideo']) {
 
-const video_rectangle = () => {
-    push()
+
+        push()
         // welp how can we have this guy move in and out?
         // translate on the z axis?
         // set an x, y, z limit
         // move in a direction until it hits one of those limits, then 'bounce' back in the other direction
-        
+
         noStroke()
         // background(0.5)
         // stroke(r, g, b, 100)
@@ -13,9 +15,9 @@ const video_rectangle = () => {
         // stroke(`rgba(${r}, ${g}, ${b}, 1.5)`)
         // fill(255, 255, 255, 90)
 
-        var adjustedSphereHeight =  adjusted_height - 10;
-        translate(adjusted_width, adjustedSphereHeight, 10)
-        
+        var adjustedSphereHeight = adjusted_height - 10;
+        translate(adjusted_width, adjusted_height)
+
         // =====================
         // set 'v' for 3d movement of sphere
         // --------------------------------- 
@@ -24,11 +26,12 @@ const video_rectangle = () => {
         // console.log(v)
         // translate(v);
         // ====================
-        let t = millis() / 3000
-        rotateY(180)
-        // rotateX(t/2)
+        // var t = millis() / 3000
+        // rotateY(180)
+        // rotateZ(t/2)
+        // rotate(t/2)
 
-        directionalLight(255, 255, 255, 0, 0, -1);
+        // directionalLight(255, 255, 255, 0, 0, -1);
 
         if (vid && vid.width && camShader) {
             // for 3D/WEBGL
@@ -77,34 +80,26 @@ const video_rectangle = () => {
 
             // draw the shaderlayer into the copy layer
             copyLayer.image(shaderLayer, 0, 0, width, height);
+            
+            // save the image
+            // during the init ...
+            // var rotatedImage=getRotatedImage(myImage);
+            // print(rotatedImage)
+            // ... later ...
+            // ctx.drawImage(rotatedImage, ... , ...);
+
             // pass the shader as a texture
             texture(shaderLayer)
             // =================================
             // console.log('miclevel*10', micLevel * 10) 
             // var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
             // sphereMicLevel = map(round(micLevel * 100, 3), 0.000, 1.000, 0.80, 1.35)
+            
+            // not perfect but it'll do
+            rect(-100, -60, 200, 120);
             // sphere(50, 16, 16);
-            rectangle(25, -25, 25, 25)
         }
 
-    pop()
-
-                
-    // push()
-    //     translate(adjusted_width, adjustedSphereHeight, 10)
-    //     rotateY(t/2)
-
-    //     strokeWeight(1.5)
-    //     stroke(`rgba(${r}, ${g}, ${b}, 1.5)`)
-    //     var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
-    //     // sphere
-    //     MicLevel = map(round(micLevel * 100, 3), 0.000, 1.000, 0.80, 1.35)
-    //     sphere(53, 16, 16);
-
-    //     // let t = millis() / 3000
-
-    // pop()
-
+        pop()
+    }
 }
-
-module.exports = video_rectangle

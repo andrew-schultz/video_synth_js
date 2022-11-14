@@ -21,6 +21,55 @@ Redis:
         - or its just been running 5ever in a background service locally
 
 
+
+----------------------
+Liquid Light show:
+- try to programatically recreate a liquid light show
+- maybe make a canvas that covers the whole screen on top of everything else?
+    - has some opacity/transparency so you can see video/objects behind
+- how to handle shapes of blobs?
+    - maybe theres some physics support in there we can use to kind of fake the blobs being stretched and contracted?
+
+variables / attributes:
+-------
+- container
+    - max area
+    - boundaries for blobs to push up against
+        - provides pressure on the outside (away from center) side of blobs as they get pushed closer
+
+- pressure
+    - float
+    - value to represent if the lense/dish is being pushed down or pulled up, and by how much from the 0/starting point
+    - negative value is UP, positive is DOWN
+    - negative value would cause things to come closer to center 
+    - positive value would cause things to be pushed farther from center
+
+- active_surface_area
+    - float
+    - represents size of "lense"/"dish" being pressed down/pulled up
+    - should get larger as "pressure" value goes up(positive), smaller as "pressure" value goes down(negative)
+
+-  blobs
+    - array of "blob" objects
+
+- solution_color
+    - main "background" color
+        - imagine the main solution that the oils are squirted into 
+        - rgba value
+
+- blob
+    - object/class
+    - color
+        - its color/hex code/rgb(a) value
+    - opacity
+        - use with color
+    - starting_size
+        - default starting size when pressure is at 0
+    - size
+        - calculated value of `starting_size * pressure_modifier`
+            - pressure modifier can be just the pressure value or the pressure value mapped to a specific range
+ 
+
 ----------------------
 TO START:
 ---------

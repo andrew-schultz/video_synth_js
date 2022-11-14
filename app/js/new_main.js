@@ -29,11 +29,19 @@ var toggles = {
     'movingSphere': false,
     'lockCenters': false,
     'movingSphereSmooth': false,
+    'terrain': false,
+    'infiniteMirror':false,
+    'beatDetectBoxes': false,
+    'infiniteCapture': true,
 }
 
 var multipliers = {
     'metronomeRate': 5,
+    'infiniteCaptureRate': 5,
+    'infiniteCaptureListMax': 5,
+    'infiniteCaptureBrightnessThreshold': 120,
     'movementRange': 1,
+    'terrainRange': 1
 }
 
 
@@ -112,6 +120,11 @@ var multipliers = {
 // }
 
 const setVarToggle = (name) => {
+    // need to add some handlers here to clean up if something is toggled to false
+    // remove terrain, remove boxes, remove images, etc etc etc
+
+
+
     if (name in toggles) {
         if (Number.isInteger(toggles[name])) {
             // if its an int and its true (1), make it 0
@@ -210,6 +223,12 @@ class SphereObj {
     
 }
 
+class CaptureObj {
+    constructor(image) {
+        this.image = image
+    }
+}
+
 let visualizer;
 let videoDeviceId;
 let audioDeviceId;
@@ -221,6 +240,7 @@ let audioStarted = false;
 let camShader;
 var mic;
 var vid;
+var vidStream;
 let fft;
 let shaderLayer;
 let copyLayer;
@@ -260,6 +280,32 @@ let new_width;
 let aspect_ratio;
 
 let rect_color_offset;
+let mirrorCounter = 0
+// variables for terrain generator
+var cols, rows;
+var scl = 40;
+var w = 5000;
+var h = 1600;
+
+var flying = 0;
+var terrain = [];
+
+
+var hiddenVidContainer
+
+
+// variables for video decay
+let canvas1 = false;
+let canvas2 = false;
+let canvas3 = false;
+let mainCanvas = false;
+let captureList = []
+
+let cap
+let frame
+let fgmask
+let fgbg
+
 
 // variables for rainbow cycle
 let state = 0;
@@ -452,7 +498,12 @@ onBeat = (micLevel) => {
     if (toggles['movingSphereSmooth']) {
         updateSphereVelocity(micLevel)
     }
-    addRect(micLevel)
+    if (toggles['beatDetectBoxes']) {
+        addRect(micLevel)
+    }
+    // if (toggles['infiniteCapture']) {
+    //     captureImage()
+    // }
     // addSphere(micLevel)
 }
 
@@ -480,6 +531,140 @@ addRect = (micLevel) => {
     visualizer.rect_list.push(rect_obj)
     visualizer.beat_counter += 1
 }
+
+// applyBackgroundMask = () => {
+//     let video = document.getElementById('hidden_video_player');
+//     // debugger
+//     // let video = videoDeviceId
+//     if (!cap) {
+//         cap =  new cv.VideoCapture(video.srcObject);
+//         frame = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+//         fgmask = new cv.Mat(video.height, video.width, cv.CV_8UC1);
+//         fgbg = new cv.BackgroundSubtractorMOG2(500, 16, true);
+//     }
+
+//    if (cap && frame && fgmask && fgbg) {
+//         debugger
+//         cap.read(frame);
+//         fgbg.apply(frame, fgmask);
+//    }
+
+//     return fgmask
+// }
+
+applyP5BrightnessMask = (unmaskedImage) => {
+    // load the canvas pixels 
+    unmaskedImage.loadPixels();
+
+    for (let y = 0; y < height; y ++) {
+        for (let x = 0; x < width; x++) {
+            let i = (width * y + x) * 4;
+            let rI = ((width * y) + (width - x - 1)) * 4;
+
+            // get r,g,b values from pixel array
+            let r = unmaskedImage.pixels[i + 0];
+            let g = unmaskedImage.pixels[i + 1];
+            let b = unmaskedImage.pixels[i + 2];
+
+            // get the average brightness of the pixel
+            let br = (r + b + g) / 3;
+
+            // if the pixel is brighter that 120, 
+            if (br < multipliers['infiniteCaptureBrightnessThreshold']) {
+                // make it black
+                unmaskedImage.pixels[i + 0] = 0;
+                unmaskedImage.pixels[i + 1] = 0;
+                unmaskedImage.pixels[i + 2] = 0;
+
+            }
+        }
+    }
+
+    // Don't forget this!
+    unmaskedImage.updatePixels();
+
+    return unmaskedImage
+}
+
+applyP5EdgeDetection = (source) => {
+    let threshold = 127;
+    let destination = createImage(source.width, source.height);
+    // We are going to look at both image's pixels
+    source.loadPixels();
+    destination.loadPixels();
+    
+    // Since we are looking at left neighbors
+    // We skip the first column
+    for (var x = 1; x < source.width; x++ ) {
+        for (var y = 0; y < source.height; y++ ) {
+        var loc = (x + y * source.width) * 4;
+        // The functions red(), green(), and blue() pull out the three color components from a pixel.
+        var r = source.pixels[loc   ]; 
+        var g = source.pixels[loc + 1];
+        var b = source.pixels[loc + 2];
+        
+        // Pixel to the left location and color
+        var leftLoc = ((x - 1) + y * source.width) * 4;
+        var rleft = source.pixels[leftLoc   ]; 
+        var gleft = source.pixels[leftLoc + 1];
+        var bleft = source.pixels[leftLoc + 2];      
+        // New color is difference between pixel and left neighbor
+        var diff = abs((r+g+b)/3 - (rleft+gleft+bleft)/3);
+        destination.pixels[loc    ] = diff;
+        destination.pixels[loc + 1] = diff;
+        destination.pixels[loc + 2] = diff;
+        destination.pixels[loc + 3] = 255; // Always have to set alpha
+        }
+    }
+  
+    // We changed the pixels in destination
+    destination.updatePixels();
+
+    return destination
+}
+
+removeBlack = (data) => {
+    for (var i = 0; i < data .length; i += 4) {
+        if (data [i]+ data [i + 1] + data [i + 2] < 10) { 
+            data [i + 3] = 0; // alpha
+        }
+    }
+    return data
+}
+
+applyP5RemoveBlack = (img) => {
+    let bufferctx = img.drawingContext
+    var imageData = bufferctx.getImageData(0, 0, img.width, img.height);
+    let updatedImageData = removeBlack(imageData.data);
+    let updatedImage = new ImageData(new Uint8ClampedArray(updatedImageData), img.width, img.height)
+    img.drawingContext.putImageData(updatedImage, 0, 0)
+
+    return img
+}
+
+addCapture = () => {
+    // let newGraphics = applyBackgroundMask()
+    // let newGraphics = createGraphics(vid.width, vid.height)
+    // debugger
+    let vidImage = vid.get(0, 0, vid.width, vid.height)
+
+    // manually create an offscreencanvas
+    //  https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvas
+    // when creating need to pass the `willReadFrequently` flag in the settings object, this should improve performance and silence console warning
+    //      
+
+    let maskedImage = applyP5BrightnessMask(vidImage)
+    // let maskedImage = applyP5EdgeDetection(vidImage)
+    maskedImage = applyP5RemoveBlack(maskedImage)
+
+    let captureObj = new CaptureObj(maskedImage)
+
+
+    // let captureObj = new CaptureObj(vidImage)
+
+
+    captureList.push(captureObj)
+} 
 
 // maybe the function thats called be onBeat should be different from the one that actually moves the sphere
 // the onBeat one just updates the velocity/directio
@@ -764,11 +949,16 @@ setup = () => {
     let constraints = {
         video: {
             deviceId: videoDeviceId,
-            optional: [{ maxFrameRate: 10 }]
+            optional: [{ willReadFrequently: true }]
         },
         audio: false
     };
-    vid = createCapture(VIDEO)
+
+    vid = createCapture(constraints, function(stream) {
+        vidStream = stream
+        hiddenVidContainer = document.getElementById('hidden_video_player')
+        hiddenVidContainer.srcObject = stream;
+    })
     vid.size(windowWidth, windowHeight);
     
     let outline = null
@@ -787,6 +977,23 @@ setup = () => {
     amplitude = new p5.Amplitude()
     amplitude.setInput(mic)
     amplitude.smooth(0.9);
+    cols = w / scl;
+    rows = h / scl;
+
+    for ( var i = 0; i < cols; i++ ) {
+        terrain[i] = [];
+        for ( var j = 0; j < rows; j++ ) {
+            terrain[i][j] = [];
+        }
+    }
+
+    pixelDensity(1);
+
+    // createCanvas(390, 240);
+    // capture = createCapture(VIDEO);
+    // capture.size(320, 240);
+    // capture.hide()
+    // frameRate(20)
 }
 
 draw = () => {
@@ -898,9 +1105,69 @@ draw = () => {
 // all drawing function below this line
 // ================================// ================================// ================================// ================================
 
+    if (toggles['infiniteCapture']) {
+            
+        push()
+        translate(0, 0, -10)
+        const new_adjusted_width = (new_width / 2)
+        const new_adjusted_height = (new_height / 2)
+        if (vid && vid.width) {
+            if (visualizer.counter % (2 * multipliers['infiniteCaptureRate']) == 0) {
+                // adds a CaptureObj to the CaptureList
+                // CaptureObj is a class representing one of the repeating image capture objects
+                // CaptureList is a class representing the list of capture objects to display in sequence. 
+                // the captureList only ever contains 10 objects/items
+                // addCapture also shifts the oldest object off the array if the count > 10
+
+                addCapture()
+                if (captureList.length > multipliers['infiniteCaptureListMax']) {
+                    // captureList[0].image.delete();
+                    captureList.shift()
+
+                    // the while loop is a backup to ensure we're at the correct size
+                    while (captureList.length > multipliers['infiniteCaptureListMax']) {
+                        captureList.shift()
+                    }
+                }
+            }
+            
+            if (!mainCanvas) {
+                mainCanvas = createGraphics(new_adjusted_width, new_adjusted_height);
+            }
+
+            const w = new_adjusted_width / 2
+            const h = new_adjusted_height / 2
+            for (let i in captureList) {
+                if (captureList[i].image != undefined ) {
+                    const invertedModifier = map(i, 0, multipliers['infiniteCaptureListMax'], 1.0, 0.1)
+                    const modifier = map(i, 0, multipliers['infiniteCaptureListMax'], 0.0, 1.0)
+                    const destinationX = 0 + w * modifier
+                    const destinationY = 0 + new_adjusted_height * modifier
+                    
+                    if (captureList[i].image) {                        
+                        // iHeight is the actual height of the image    
+                        let iHeight = new_adjusted_height * invertedModifier
+
+                        mainCanvas.image(
+                            captureList[i].image,
+                            destinationX,
+                            new_adjusted_height - (iHeight),
+                            new_adjusted_width * invertedModifier,
+                            iHeight
+                        )
+                    }
+                
+                }
+            }
+
+            if (mainCanvas) {
+                image(mainCanvas, (new_width/2) / 2, (new_height/2) / 2)
+            }
+        }
+        pop()
+    }    
+
     if (toggles['rectangleVideo']) {
-
-
         push()
         // welp how can we have this guy move in and out?
         // translate on the z axis?
@@ -1366,7 +1633,7 @@ draw = () => {
                     // console.log('miclevel*10', micLevel * 10) 
                     // var color_offset = map(r.counter, 0, (new_width - 100), 150, 255)
                     // sphereMicLevel = map(round(micLevel * 100, 3), 0.000, 1.000, 0.80, 1.35)
-                    sphere(50, 16, 16);
+                    sphere(150, 16, 16);
                 }
             }
         pop()
@@ -1378,7 +1645,7 @@ draw = () => {
             rotateY(t/2)     
             strokeWeight(1.5)
             stroke(`rgba(${r}, ${g}, ${b}, 1.5)`)
-            sphere(53, 16, 16);
+            sphere(153, 16, 16);
         pop()
 
         // light coming from the middle square
@@ -1413,6 +1680,201 @@ draw = () => {
     // })
 
 
+    if (toggles['infiniteMirror']) {
+        push()
+        noStroke();
+        translate( adjusted_width, adjusted_height);
+        // translate(adjusted_width_sphere, adjustedSphereHeight, 100)
+       
+        // if (visualizer.counter % (10 * multipliers['metronomeRate']) == 0) {
+        debugger
+        if (vid && vid.width && vid.loadedmetadata && camShader) {
+
+            // for 3D/WEBGL
+            // https://github.com/aferriss/p5jsShaderExamples
+
+            // =================================
+            // rainbow cycle / rgb_to_hsb shader
+            // --------------------------------- 
+            // // instead of just setting the active shader we are passing it to the createGraphics layer
+            // shaderTexture.shader(camShader);
+            // // here we're using setUniform() to send our uniform values to the shader
+            // camShader.setUniform('tex0', vid);
+            // camShader.setUniform('time', frameCount * 0.01);
+            // // passing the shaderTexture layer geometry to render on
+            // shaderTexture.rect(0,0,width,height);
+            // // pass the shader as a texture
+            // texture(shaderTexture);
+            // =================================
+
+
+            // // ==========================================
+            // // =================================
+            // // video_feedback shader
+            // // --------------------------------- 
+            // // shader() sets the active shader with our shader
+            // shaderLayer.shader(camShader);
+
+            // // lets just send the cam to our shader as a uniform
+            // camShader.setUniform('tex0', vid);
+
+            // // also send the copy layer to the shader as a uniform
+            // camShader.setUniform('tex1', copyLayer);
+    
+            // // send mouseDown to the shader as a int (either 0 or 1)
+            // // everytime the counter is divisible by 100 lets reset the feedback
+            // if (visualizer.counter % 50 == 0) {
+            //     camShader.setUniform('mouseDown', 1);
+            // }
+            // else {
+            //     // lets also allow clicking to reset the feedback
+            //     camShader.setUniform('mouseDown', int(mouseIsPressed));
+            // }
+
+            // camShader.setUniform('time', frameCount * 0.01);
+
+            // // rect gives us some geometry on the screen
+            // shaderLayer.rect(0, 0, width, height);
+
+            // // draw the shaderlayer into the copy layer
+            // copyLayer.image(shaderLayer, 0, 0, width, height);
+
+            // // ==========================================
+
+
+            let cvLayer = createGraphics(windowWidth, windowHeight);
+            let src = new cv.Mat(hiddenVidContainer.height, hiddenVidContainer.width, cv.CV_8UC4);
+            let dst = new cv.Mat(hiddenVidContainer.height, hiddenVidContainer.width, cv.CV_8UC1);
+            // debugger
+            let cap = new cv.VideoCapture(hiddenVidContainer);
+            debugger
+            cap.read(src)
+            cv.cvtColor(src, dst, cv.COLOR_RGB2GRAY, 0);
+            // You can try more different parameters
+            cv.Canny(src, dst, 50, 100, 3, false);
+            cv.imshow(cvLayer, dst);
+            src.delete(); dst.delete();
+
+
+            // pass the shader as a texture
+            texture(cvLayer)
+            
+            push()
+            rotateZ(QUARTER_PI * 8)
+            plane(400, 400)
+            pop()
+
+            push()
+            rotateZ(QUARTER_PI * 7.5)
+            plane(350, 350)
+            pop()
+
+            push()
+            rotateZ(QUARTER_PI * 7)
+            plane(300, 300)
+            pop()
+
+            push()
+            rotateZ(QUARTER_PI * 6.5)
+            plane(250, 250)
+            pop()
+
+            push()
+            rotateZ(QUARTER_PI * 6)
+            plane(200, 200)
+            pop()
+
+            push()
+            rotateZ(QUARTER_PI * 5.5)
+            plane(150, 150)
+            pop()
+
+            push()
+            rotateZ(QUARTER_PI * 5)
+            plane(100, 100)
+            pop()
+
+            // push()
+            // rotateZ(QUARTER_PI * 4)
+            // plane(30, 30)
+            // pop()
+        }
+        pop()
+    }
+
+    if (toggles['terrain']) {
+        
+        push()
+        // background( 0 );
+        frameRate(20)
+        stroke( 255 );
+        noFill();
+        let micLevel;
+        let level;
+
+        if (audioStarted) {
+            micLevel = mic.getLevel();
+            level = amplitude.getLevel();
+            // console.log(level)
+            // console.log('detect the beat')
+            // console.log('level', level)
+            // console.log('micLevel', micLevel)
+            // detectBeat(level, micLevel);
+        } else {     
+            // fill(255);   
+            // text('tap to start', width/2, height /2);
+        }
+    
+        var rotateXOffset = 3.00;
+    
+        translate( adjusted_width / 2 + 300, adjusted_height + 300);
+        rotateX( PI / rotateXOffset );
+        flying -= 0.05;
+        // flying = 0
+        translate( -w / 2, -h + 300 );
+    
+        var yoff = flying;
+        
+        // if (visualizer.counter % 2 == 0) {
+            for ( var y = 0; y < rows; y++ ) {
+                var xoff = 0;
+        
+                for ( var x = 0; x < cols; x++ ) {
+                    terrain[ x ][ y ] = map( noise( xoff, yoff ), 0, 1, -150, 150 );
+                    // var n = noise( xoff, yoff )
+                    // var m = level
+                    // console.log('n', n)
+                    // console.log(m)
+                    // terrain[ x ][ y ] = map( noise(level, yoff), -1, 1, -150, 150 );
+                    // console.log(terrain[ x ][ y ])
+                    xoff += 0.1;
+                }
+        
+                
+                // yoff += level;
+                // if (level > 0) {
+                    // yoff += level
+                // }
+                // else {
+                    // yoff += (level * -1)
+                // }
+                yoff += (multipliers['terrainRange'] / 10)
+                // console.log(terrainRange)
+                // yoff += 0.1
+            }
+        // }
+    
+        for ( var y = 0; y < rows - 1; y = y + 1 ) {
+            beginShape( TRIANGLE_STRIP );
+            for ( var x = 0; x < cols; x = x + 1 ) {
+                vertex( x * scl, y * scl, terrain[ x ][ y ] );
+                vertex( x * scl, ( y + 1 ) * scl, terrain[ x ][ y + 1 ] );
+                // vertex( ( x + 2 ) * scl, y * scl, terrain[ x ][ y ] );
+            }
+            endShape( );
+        }
+        pop()
+    }
 
     // ===============================
     push()
@@ -1477,6 +1939,5 @@ draw = () => {
         endShape(CLOSE)
     }) 
     pop()
-
     
 } 

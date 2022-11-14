@@ -15,6 +15,16 @@
             <div class="containers">
                 <div class="toggles_container main_container">
                     <div class="toggle_container sub_container row">
+                        <label for="beatDetectBoxes">beat detect boxes</label>
+                        <input id="beatDetectBoxes" type="checkbox" onchange="setVarToggle('beatDetectBoxes')" name="beatDetectBoxes"></input>
+                    </div>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="infiniteCapture">infinite image capture</label>
+                        <input id="infiniteCapture" type="checkbox" onchange="setVarToggle('infiniteCapture')" name="infiniteCapture"></input>
+                    </div>
+
+                    <div class="toggle_container sub_container row">
                         <label for="fillOn">fill On</label>
                         <input id="fillOn" type="checkbox" onchange="setVarToggle('fillOn')" name="fillOn"></input>
                     </div>
@@ -32,6 +42,13 @@
                     <div class="toggle_container sub_container row">
                         <label for='linesAndWalls'>lines and walls</label>
                         <input id="linesAndWalls" type="checkbox" onchange="setVarToggle('linesAndWalls')" name="linesAndWalls"></input>
+                    </div>
+
+                    <br>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="infiniteMirror">infiniteMirror</label>
+                        <input id="infiniteMirror" type="checkbox" onchange="setVarToggle('infiniteMirror')" name="infiniteMirror"></input>
                     </div>
 
                     <br>
@@ -79,6 +96,13 @@
                         <label for="rectangleVideo">rectangleVideo</label>
                         <input id="rectangleVideo" type="checkbox" onchange="setVarToggle('rectangleVideo')" name="rectangleVideo"></input>
                     </div>
+
+                    <br>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="terrain">terrain</label>
+                        <input id="terrain" type="checkbox" onchange="setVarToggle('terrain')" name="rectangleVideo"></input>
+                    </div>
                 </div>
 
                 <hr>
@@ -93,17 +117,42 @@
                         <label for="movementRange">movementRange</label>
                         <input id="movementRange" type="range" min="1" max="10" value="1" onchange="setMultiplier('movementRange', event)">
                     </div>
+
+                    <div class="multiplier_container sub_container column">
+                        <label for="terrainRange">terrainRange</label>
+                        <input id="terrainRange" type="range" min="1" max="20" value="1" step="1" onchange="setMultiplier('terrainRange', event)">
+                    </div>
+
+                    <div class="multiplier_container sub_container column">
+                        <label for="infiniteCaptureRate">infinite Capture Rate</label>
+                        <input id="infiniteCaptureRate" type="range" min="1" max="10" value="5" onchange="setMultiplier('infiniteCaptureRate', event)">
+                    </div>
+
+                    <div class="multiplier_container sub_container column">
+                        <label for="infiniteCaptureListMax">infiniteCapture List Max</label>
+                        <input id="infiniteCaptureListMax" type="range" min="1" max="10" value="5" onchange="setMultiplier('infiniteCaptureListMax', event)">
+                    </div>
+
+                    <div class="multiplier_container sub_container column">
+                        <label for="infiniteCaptureBrightnessThreshold">infiniteCapture Brightness Threshold</label>
+                        <input id="infiniteCaptureBrightnessThreshold" type="range" min="1" max="255" value="120" onchange="setMultiplier('infiniteCaptureBrightnessThreshold', event)">
+                    </div>
                 </div>
             </div>
-            
+                                                 
             <div class="expand_toggles" onclick="expandToggles()">>></div>
         </div>
+
+        <video id="hidden_video_player"></video>
         
         <script src="js/p5.min.js"></script>
         <script src="js/p5.sound.js"></script>
         <!-- <script src="js/melty_marble.js" type="module"></script> -->
-        <!-- <script src="js/main.js"></script> -->
-        <script src="js/new_main.js"></script>
+        <!-- <script src="js/new_main.js"></script> -->
+        <script src="/js/opencv.js" type="text/javascript"></script>
+
+        <script src="/js/new_main.js"></script>
+        <!-- <script src="/js/terrain_new.js"></script> -->
 
     </body>
 </html>
