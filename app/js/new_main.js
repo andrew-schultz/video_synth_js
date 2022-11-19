@@ -33,15 +33,21 @@ var toggles = {
     'infiniteMirror':false,
     'beatDetectBoxes': false,
     'infiniteCapture': true,
+    'thresholdFilter': false,
 }
 
 var multipliers = {
     'metronomeRate': 5,
-    'infiniteCaptureRate': 5,
+    'infiniteCaptureRate': 2,
     'infiniteCaptureListMax': 5,
-    'infiniteCaptureBrightnessThreshold': 120,
+    'infiniteCaptureBrightnessThreshold': 100,
     'movementRange': 1,
-    'terrainRange': 1
+    'terrainRange': 1,
+    'infiniteCaptureInvertedModifier': 1.0,
+    'infiniteCaptureModifier': 1,
+    'cameraTilt': 0.00,
+    'infiniteCaptureXMod': 0,
+    'infiniteCaptureYMod': 0,
 }
 
 
@@ -142,9 +148,15 @@ const setVarToggle = (name) => {
 }
 
 const setMultiplier = (key, event) => {
-    var value = int(event.currentTarget.value) ? event.currentTarget.value : 1
-    console.log(key, value)
+    if (key == 'infiniteCaptureInvertedModifier') {
+        var value = float(event.currentTarget.value) ? event.currentTarget.value : 0.0
+    } else {
+        var value = int(event.currentTarget.value) ? event.currentTarget.value : 0
+    }
+    
     multipliers[key] = value;
+    
+    console.log(key, value)
 }
 
 const initialize = () => {
@@ -298,8 +310,10 @@ var hiddenVidContainer
 let canvas1 = false;
 let canvas2 = false;
 let canvas3 = false;
+
 let mainCanvas = false;
 let captureList = []
+let cam;
 
 let cap
 let frame
@@ -657,12 +671,11 @@ addCapture = () => {
     // let maskedImage = applyP5EdgeDetection(vidImage)
     maskedImage = applyP5RemoveBlack(maskedImage)
 
-    let captureObj = new CaptureObj(maskedImage)
-
-
-    // let captureObj = new CaptureObj(vidImage)
-
-
+    if (toggles['thresholdFilter']) {
+        maskedImage.filter(THRESHOLD)
+    }
+    
+    let captureObj = new CaptureObj(maskedImage)    
     captureList.push(captureObj)
 } 
 
@@ -994,6 +1007,9 @@ setup = () => {
     // capture.size(320, 240);
     // capture.hide()
     // frameRate(20)
+    // normalMaterial();
+    // cam = createCamera();
+    // cam.tilt(0.0);
 }
 
 draw = () => {
@@ -1108,6 +1124,8 @@ draw = () => {
     if (toggles['infiniteCapture']) {
             
         push()
+        // set initial tilt
+        // cam.tilt(-0.1);
         translate(0, 0, -10)
         const new_adjusted_width = (new_width / 2)
         const new_adjusted_height = (new_height / 2)
@@ -1117,7 +1135,7 @@ draw = () => {
                 // CaptureObj is a class representing one of the repeating image capture objects
                 // CaptureList is a class representing the list of capture objects to display in sequence. 
                 // the captureList only ever contains 10 objects/items
-                // addCapture also shifts the oldest object off the array if the count > 10
+                // after we add the new capture we shift the oldest object off the array if the count > 10
 
                 addCapture()
                 if (captureList.length > multipliers['infiniteCaptureListMax']) {
@@ -1136,23 +1154,46 @@ draw = () => {
             }
 
             const w = new_adjusted_width / 2
-            const h = new_adjusted_height / 2
             for (let i in captureList) {
                 if (captureList[i].image != undefined ) {
                     const invertedModifier = map(i, 0, multipliers['infiniteCaptureListMax'], 1.0, 0.1)
                     const modifier = map(i, 0, multipliers['infiniteCaptureListMax'], 0.0, 1.0)
-                    const destinationX = 0 + w * modifier
-                    const destinationY = 0 + new_adjusted_height * modifier
+
+                    const iHeight = new_adjusted_height * (invertedModifier)
+                    const iWidth = new_adjusted_width * (invertedModifier)
+                    const h = new_adjusted_height - iHeight
+
+                    // in webgl mode: defualt position is x=0, y=full height
+                    // const destinationX = 0 + w * multipliers['infiniteCaptureYMod']
+                    // const destinationY = 0 + h * multipliers['infiniteCaptureYMod']
+
+                    // its 0 (the left side) plus i * whole width / width of image?
+                    let destinationX = ((new_adjusted_width - iWidth) / 10) * multipliers['infiniteCaptureXMod']
+
+                    // if the distance between right side of the canvas and the left side of the image is less than the width of the image
+                    // (if the image would extend past the right side) 
+                    if ((new_adjusted_width - destinationX ) < iWidth) {
+                        destinationX = new_adjusted_width - iWidth
+                    }
+
+                    let destinationY = ((0+h) / 10) * multipliers['infiniteCaptureYMod']
+                    if ((new_adjusted_height - destinationY) < iHeight) {
+                        destinationY = new_adjusted_height - iHeight
+                    }
+                    // const destinationY = 0 + h
+
+                    // const destinationY = new_adjusted_height - (iHeight)
+                    // const destinationY = (new_adjusted_height - (iHeight)) / (modifier)
                     
-                    if (captureList[i].image) {                        
+                    if (captureList[i].image) {        
+                        // iWidth is the actual width of the image                
                         // iHeight is the actual height of the image    
-                        let iHeight = new_adjusted_height * invertedModifier
 
                         mainCanvas.image(
                             captureList[i].image,
                             destinationX,
-                            new_adjusted_height - (iHeight),
-                            new_adjusted_width * invertedModifier,
+                            destinationY,
+                            iWidth,
                             iHeight
                         )
                     }
