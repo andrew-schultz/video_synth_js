@@ -32,8 +32,13 @@ var toggles = {
     'terrain': false,
     'infiniteMirror':false,
     'beatDetectBoxes': false,
-    'infiniteCapture': true,
+    'infiniteCapture': false,
     'thresholdFilter': false,
+    'invertCaptureDepth': false,
+    'enableFractal': false,
+    'posterizeFilter': false,
+    'blurFilter': false,
+    'opaqueFilter': false,
 }
 
 var multipliers = {
@@ -48,6 +53,13 @@ var multipliers = {
     'cameraTilt': 0.00,
     'infiniteCaptureXMod': 0,
     'infiniteCaptureYMod': 0,
+    'fractalRate': 1,
+    'posterizeRange': 10,
+    'blurRange': 1,
+}
+
+var colors = {
+    'thresholdFilterColor': '#000000',
 }
 
 
@@ -159,6 +171,12 @@ const setMultiplier = (key, event) => {
     console.log(key, value)
 }
 
+const setColor = (key, event) => {
+    colors[key] = event.currentTarget.value;
+    
+    console.log(key, event.currentTarget.value)
+}
+
 const initialize = () => {
     // this isn't going to work until I get https working......
     navigator.mediaDevices.enumerateDevices().then((devices) => {
@@ -238,6 +256,13 @@ class SphereObj {
 class CaptureObj {
     constructor(image) {
         this.image = image
+        this.counter = 1.0
+    }
+}
+
+class CaptureDiv {
+    constructor() {
+        this.counter = 0.0
     }
 }
 
@@ -313,6 +338,7 @@ let canvas3 = false;
 
 let mainCanvas = false;
 let captureList = []
+let captureDivList = []
 let cam;
 
 let cap
@@ -487,7 +513,7 @@ detectBeat = (level, micLevel) => {
     if (level  > beatCutoff && level > beatThreshold) {
         rainbowCycleOn(50);
         onBeat(micLevel);
-        beatCutoff = level *1.2;
+        beatCutoff = level * 1.2;
         framesSinceLastBeat = 0;
     } else{
         if (framesSinceLastBeat <= beatHoldFrames) {
@@ -638,9 +664,9 @@ applyP5EdgeDetection = (source) => {
 }
 
 removeBlack = (data) => {
-    for (var i = 0; i < data .length; i += 4) {
-        if (data [i]+ data [i + 1] + data [i + 2] < 10) { 
-            data [i + 3] = 0; // alpha
+    for (var i = 0; i < data.length; i += 4) {
+        if (data[i] + data[i + 1] + data[i + 2] < 10) { 
+            data[i + 3] = 0; // alpha
         }
     }
     return data
@@ -654,6 +680,11 @@ applyP5RemoveBlack = (img) => {
     img.drawingContext.putImageData(updatedImage, 0, 0)
 
     return img
+}
+
+addCaptureDiv = () => {
+    const newDiv = new CaptureDiv()
+    captureDivList.push(newDiv)
 }
 
 addCapture = () => {
@@ -673,6 +704,18 @@ addCapture = () => {
 
     if (toggles['thresholdFilter']) {
         maskedImage.filter(THRESHOLD)
+    }
+
+    if (toggles['posterizeFilter']) {
+        maskedImage.filter(POSTERIZE, multipliers['posterizeRange'])
+    }
+
+    if (toggles['blurFilter']) {
+        maskedImage.filter(BLUR, multipliers['blurRange'])
+    }
+
+    if (toggles['opaqueFilter']) {
+        maskedImage.filter(OPAQUE)
     }
     
     let captureObj = new CaptureObj(maskedImage)    
@@ -1136,15 +1179,21 @@ draw = () => {
                 // CaptureList is a class representing the list of capture objects to display in sequence. 
                 // the captureList only ever contains 10 objects/items
                 // after we add the new capture we shift the oldest object off the array if the count > 10
-
+                
+                addCaptureDiv()
                 addCapture()
                 if (captureList.length > multipliers['infiniteCaptureListMax']) {
                     // captureList[0].image.delete();
                     captureList.shift()
+                    captureDivList.shift()
 
                     // the while loop is a backup to ensure we're at the correct size
                     while (captureList.length > multipliers['infiniteCaptureListMax']) {
                         captureList.shift()
+                    }
+
+                    while (captureDivList.length > multipliers['infiniteCaptureListMax']) {
+                        captureDivList.shift()
                     }
                 }
             }
@@ -1154,20 +1203,36 @@ draw = () => {
             }
 
             const w = new_adjusted_width / 2
-            for (let i in captureList) {
-                if (captureList[i].image != undefined ) {
+            // let fractalRate = multipliers['fractalRate'] 
+            for (let b in captureList) {
+                let i = b
+                if (toggles['invertCaptureDepth']) {
+                    i = (captureList.length - 1) - b
+                    if (int(b) == 0) {
+                        i = 0
+                    }
+                    if (int(b) == 1) {
+                        i = 1
+                    }
+                }
+                
+                if (captureList[b] && captureList[b].image != undefined ) {
                     const invertedModifier = map(i, 0, multipliers['infiniteCaptureListMax'], 1.0, 0.1)
                     const modifier = map(i, 0, multipliers['infiniteCaptureListMax'], 0.0, 1.0)
+                    const nextInvertedModifier = map(i - 1, 0, multipliers['infiniteCaptureListMax'], 1.0, 0.1)
+                    const nextModifer = map(i - 1, 0, multipliers['infiniteCaptureListMax'], 0.0, 1.0)
 
-                    const iHeight = new_adjusted_height * (invertedModifier)
-                    const iWidth = new_adjusted_width * (invertedModifier)
+
+                    // iHeight and iWidth are the adjusted values for the height and width of canvas/graphic
+                    let iHeight = new_adjusted_height * (invertedModifier)
+                    let iWidth = new_adjusted_width * (invertedModifier)
                     const h = new_adjusted_height - iHeight
 
                     // in webgl mode: defualt position is x=0, y=full height
                     // const destinationX = 0 + w * multipliers['infiniteCaptureYMod']
                     // const destinationY = 0 + h * multipliers['infiniteCaptureYMod']
 
-                    // its 0 (the left side) plus i * whole width / width of image?
+                    // destinationX is the X coord (top left) of the graphic
                     let destinationX = ((new_adjusted_width - iWidth) / 10) * multipliers['infiniteCaptureXMod']
 
                     // if the distance between right side of the canvas and the left side of the image is less than the width of the image
@@ -1176,10 +1241,46 @@ draw = () => {
                         destinationX = new_adjusted_width - iWidth
                     }
 
+                    // destinationY is the Y coord (bottom right?) of the graphic
                     let destinationY = ((0+h) / 10) * multipliers['infiniteCaptureYMod']
                     if ((new_adjusted_height - destinationY) < iHeight) {
                         destinationY = new_adjusted_height - iHeight
                     }
+
+                    if (toggles['enableFractal']) {
+
+                        // we only ever get a give capture 10 cycles before its pushed out
+                        // so we cant just use the counter, cause it'll only ever go to 10
+
+                        // also if we do it based on captureList[i].counter it'll look consistent cause its relative to specific image
+                        // its happening in sequence so everything just shrinks...
+
+                        // need to apply 1 general 
+
+                        captureDivList[i].counter = 0.5 - captureDivList[i].counter 
+                        // console.log(captureList[i].counter)
+                        // let fractalRate = (1.0 + captureList[i].counter)
+                        let fractalRate = captureDivList[i].counter
+                        iWidth = iWidth + fractalRate
+                        iHeight = iHeight + fractalRate
+                        destinationX = destinationX + fractalRate
+                        destinationY = destinationY + fractalRate
+
+                        // if it grows or shrinks to match the size of the next (or prior) capture canvas then it should be reset to its original size
+                       
+                        if ((new_adjusted_width * (nextInvertedModifier)) >= iWidth) {
+                            // debugger    
+                            // debugger
+                            console.log('reset')
+
+                            captureDivList[i].counter = 0.0
+                            iWidth = new_adjusted_width * (invertedModifier)
+                            iHeight = new_adjusted_height * (invertedModifier)
+                            destinationX = ((new_adjusted_width - iWidth) / 10) * multipliers['infiniteCaptureXMod']
+                            destinationY = ((0+h) / 10) * multipliers['infiniteCaptureYMod']
+                        }
+                    }
+
                     // const destinationY = 0 + h
 
                     // const destinationY = new_adjusted_height - (iHeight)
@@ -1190,11 +1291,11 @@ draw = () => {
                         // iHeight is the actual height of the image    
 
                         mainCanvas.image(
-                            captureList[i].image,
+                            captureList[b].image,
                             destinationX,
                             destinationY,
                             iWidth,
-                            iHeight
+                            iHeight,
                         )
                     }
                 
@@ -1202,7 +1303,13 @@ draw = () => {
             }
 
             if (mainCanvas) {
+                // mainCanvas
                 image(mainCanvas, (new_width/2) / 2, (new_height/2) / 2)
+
+                if (toggles['thresholdFilter']) {
+                    // filter()
+                }
+                
             }
         }
         pop()

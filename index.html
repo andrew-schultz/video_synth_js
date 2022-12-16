@@ -103,11 +103,39 @@
                         <label for="terrain">terrain</label>
                         <input id="terrain" type="checkbox" onchange="setVarToggle('terrain')" name="terrain"></input>
                     </div>
-                    
+
+                    <br>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="invertCaptureDepth">invertCaptureDepth</label>
+                        <input id="invertCaptureDepth" type="checkbox" onchange="setVarToggle('invertCaptureDepth')" name="invertCaptureDepth"></input>
+                    </div>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="enableFractal">enableFractal</label>
+                        <input id="enableFractal" type="checkbox" onchange="setVarToggle('enableFractal')" name="enableFractal"></input>
+                    </div>
+
                     <div class="toggle_container sub_container row">
                         <label for="thresholdFilter">thresholdFilter</label>
                         <input id="thresholdFilter" type="checkbox" onchange="setVarToggle('thresholdFilter')" name="thresholdFilter"></input>
                     </div>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="posterizeFilter">posterizeFilter</label>
+                        <input id="posterizeFilter" type="checkbox" onchange="setVarToggle('posterizeFilter')" name="posterizeFilter"></input>
+                    </div>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="blurFilter">blurFilter</label>
+                        <input id="blurFilter" type="checkbox" onchange="setVarToggle('blurFilter')" name="blurFilter"></input>
+                    </div>
+
+                    <div class="toggle_container sub_container row">
+                        <label for="opaqueFilter">opaqueFilter</label>
+                        <input id="opaqueFilter" type="checkbox" onchange="setVarToggle('opaqueFilter')" name="opaqueFilter"></input>
+                    </div>
+
                 </div>
 
                 <hr>
@@ -166,6 +194,30 @@
                     <div class="multiplier_container sub_container column">
                         <label for="infiniteCaptureBrightnessThreshold">infiniteCapture Brightness Threshold</label>
                         <input id="infiniteCaptureBrightnessThreshold" type="range" min="1" max="255" value="100" onchange="setMultiplier('infiniteCaptureBrightnessThreshold', event)">
+                    </div>
+
+                    <div class="multiplier_container sub_container column">
+                        <label for="fractalRate">fractal Rate</label>
+                        <input id="fractalRate" type="range" min="1" max="255" value="100" onchange="setMultiplier('fractalRate', event)">
+                    </div>
+
+                    <div class="multiplier_container sub_container column">
+                        <label for="posterizeRange">posterize filter range</label>
+                        <input id="posterizeRange" type="range" min="2" max="10" value="10" onchange="setMultiplier('posterizeRange', event)">
+                    </div>
+
+                    <div class="multiplier_container sub_container column">
+                        <label for="blurRange">blur filter range</label>
+                        <input id="blurRange" type="range" min="1" max="10" value="1" onchange="setMultiplier('blurRange', event)">
+                    </div>
+                </div>
+
+                <hr>
+
+                <div>
+                    <div class="color_container sub_container column">
+                        <label for="thresholdFilterColor">threshold Filter Color</label>
+                        <input id="thresholdFilterColor" type="color" value="#000000" onchange="setColor('thresholdFilterColor', event)">
                     </div>
                 </div>
             </div>

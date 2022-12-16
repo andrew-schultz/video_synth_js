@@ -80,6 +80,9 @@ on site options:
 - video source can be any valid camera detected by js (gotta give permissions if it complains)
 - audio source should be `aggregate device`
 
+NOTE: you may need to click within the canvas before beat detect works
+    - something about needing permission to play audio via user input 
+
 Audio MiDi Setup:
 -----------------
 - Audio Input
